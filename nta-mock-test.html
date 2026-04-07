@@ -760,13 +760,6 @@ let quizMeta = {
   duration: defaultQuestions.length * 60
 };
 
-let questions = [...defaultQuestions];
-let quizMeta = {
-  attemptId: null,
-  title: 'CUET (UG) – 2024 : Mathematics',
-  duration: defaultQuestions.length * 60
-};
-
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
@@ -1043,6 +1036,17 @@ document.addEventListener('keydown', (e) => {
 // INIT
 // ══════════════════════════════════════════
 async function loadQuizData() {
+  const injected = window.quizData;
+  if (injected && Array.isArray(injected.questions) && injected.questions.length) {
+    questions = injected.questions;
+    quizMeta = {
+      attemptId: injected.attempt_id,
+      title: injected.title ?? quizMeta.title,
+      duration: Number(injected.duration ?? (injected.questions.length * 60))
+    };
+    return;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const attemptId = params.get('attempt_id');
   const apiBase = params.get('api_base');

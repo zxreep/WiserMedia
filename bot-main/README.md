@@ -97,7 +97,6 @@ Create a Render Web Service pointing to `bot-main/`.
    - `quizId`
    - `userId`
    - `telegramId`
-   - `api_base`
 5. User completes the quiz inside Telegram Web App.
 6. Web App calls `Telegram.WebApp.sendData(...)`; bot handles `message:web_app_data` and submits answers to `POST /webapp/submit`.
 

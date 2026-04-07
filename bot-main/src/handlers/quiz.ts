@@ -12,7 +12,6 @@ function buildQuizWebAppUrl(baseUrl: string, payload: { attemptId: number; quizI
   url.searchParams.set('quizId', String(payload.quizId));
   url.searchParams.set('userId', String(payload.userId));
   url.searchParams.set('telegramId', String(payload.telegramId));
-  url.searchParams.set('api_base', config.apiBaseUrl);
   return url.toString();
 }
 

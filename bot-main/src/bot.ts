@@ -65,9 +65,19 @@ async function bootstrap() {
   await bot.api.setWebhook(config.webhookUrl);
 
   server.post('/telegram/webhook', webhookCallback(bot, 'fastify'));
-  server.get('/quiz', async (_, reply) => {
+  server.get('/quiz', async (request, reply) => {
     const html = await readFile(quizHtmlPath, 'utf8');
-    return reply.type('text/html; charset=utf-8').send(html);
+    const attemptId = Number((request.query as { attempt_id?: string }).attempt_id);
+
+    if (!Number.isInteger(attemptId)) {
+      return reply.type('text/html; charset=utf-8').send(html);
+    }
+
+    const res = await fetch(`${config.apiBaseUrl}/webapp/quiz/${attemptId}`);
+    const payload = await res.json();
+    const injected = `<script>window.quizData=${JSON.stringify(payload?.data ?? null)};</script>`;
+    const merged = html.replace('<script src="https://telegram.org/js/telegram-web-app.js"></script>', `${injected}\n<script src="https://telegram.org/js/telegram-web-app.js"></script>`);
+    return reply.type('text/html; charset=utf-8').send(merged);
   });
 
   server.get('/health', async () => ({ success: true, data: { status: 'ok' } }));
