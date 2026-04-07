@@ -1,7 +1,6 @@
 # WiserMedia
 
-This repository now contains the first production-ready backend service:
+Services in this repository:
 
-- `api-core/` — Fastify + PostgreSQL API for Telegram CUET platform.
-
-See `api-core/README.md` for setup, API docs, and deployment steps.
+- `api-core/` — Fastify + PostgreSQL backend for auth, quizzes, leaderboard, mentorship, premium.
+- `bot-main/` — grammY Telegram bot in webhook mode integrated with `api-core`.

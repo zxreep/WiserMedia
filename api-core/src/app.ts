@@ -30,6 +30,7 @@ export function buildApp() {
       'request already handled',
       'not assigned mentor'
     ]);
+
     if (knownErrors.has(errorMessage)) {
       return reply.code(400).send({ success: false, error: errorMessage });
     }
