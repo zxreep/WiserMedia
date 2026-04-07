@@ -746,11 +746,12 @@
   </div>
 </div>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 // ══════════════════════════════════════════
 // QUESTION BANK (50 CUET-style Math questions)
 // ══════════════════════════════════════════
-const questions = [
+const defaultQuestions = [
   // ── Passage 1: Missile Motion (Q1–3)
   {
     id: 1, passage: `<div class="passage-box"><div class="passage-title">Passage (Questions 1 to 3)</div>The equation of motion of a missile is x = 3t, y = −4t, z = t, where time 't' is in seconds and distance is in kilometres.</div>`,
@@ -1067,21 +1068,33 @@ const questions = [
   }
 ];
 
+let questions = [...defaultQuestions];
+let quizMeta = {
+  attemptId: null,
+  title: 'CUET (UG) – 2024 : Mathematics',
+  duration: defaultQuestions.length * 60
+};
+
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
-const TOTAL = questions.length;
+let TOTAL = questions.length;
 const STATUS = { NOT_VISITED: 0, NOT_ANSWERED: 1, ANSWERED: 2, MARKED: 3, ANSWERED_MARKED: 4 };
 const statusClass = ['not-visited', 'not-answered', 'answered', 'marked', 'answered-marked'];
 
-let state = {
-  current: 0,
-  answers: Array(TOTAL).fill(null),
-  status: Array(TOTAL).fill(STATUS.NOT_VISITED),
-  timerSec: TOTAL * 60,
-  timerInterval: null,
-  submitted: false
-};
+let state = {};
+
+function initState() {
+  TOTAL = questions.length;
+  state = {
+    current: 0,
+    answers: Array(TOTAL).fill(null),
+    status: Array(TOTAL).fill(STATUS.NOT_VISITED),
+    timerSec: quizMeta.duration || TOTAL * 60,
+    timerInterval: null,
+    submitted: false
+  };
+}
 
 // ══════════════════════════════════════════
 // TIMER
@@ -1285,13 +1298,36 @@ function submitTest() {
     <div class="result-stat red"><span class="val">${wrong}</span><span class="lbl">Wrong</span></div>
     <div class="result-stat blue"><span class="val">${skipped}</span><span class="lbl">Skipped</span></div>
   `;
+
+  const tg = window.Telegram?.WebApp;
+  const payload = {
+    attempt_id: quizMeta.attemptId,
+    answers: state.answers
+      .map((selected_option, i) => (selected_option === null ? null : { question_id: questions[i].id, selected_option }))
+      .filter(Boolean)
+  };
+
+  if (quizMeta.attemptId) {
+    const apiBase = new URLSearchParams(window.location.search).get('api_base');
+    if (apiBase) {
+      fetch(`${apiBase}/webapp/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => null);
+    }
+  }
+
+  if (tg) {
+    tg.sendData(JSON.stringify(payload));
+  }
 }
 
 function restartTest() {
   state.current = 0;
   state.answers = Array(TOTAL).fill(null);
   state.status = Array(TOTAL).fill(STATUS.NOT_VISITED);
-  state.timerSec = TOTAL * 60;
+  state.timerSec = quizMeta.duration || TOTAL * 60;
   state.submitted = false;
 
   document.getElementById('mainLayout').style.display = 'flex';
@@ -1325,8 +1361,47 @@ document.addEventListener('keydown', (e) => {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-renderQuestion();
-startTimer();
+async function loadQuizData() {
+  const params = new URLSearchParams(window.location.search);
+  const attemptId = params.get('attempt_id');
+  const apiBase = params.get('api_base');
+  const injected = window.quizData;
+
+  if (injected && Array.isArray(injected.questions) && injected.questions.length > 0) {
+    questions = injected.questions;
+    quizMeta = {
+      attemptId: injected.attempt_id ?? null,
+      title: injected.title ?? quizMeta.title,
+      duration: Number(injected.duration ?? (injected.questions.length * 60))
+    };
+    return;
+  }
+
+  if (attemptId && apiBase) {
+    const response = await fetch(`${apiBase}/webapp/quiz?attempt_id=${encodeURIComponent(attemptId)}`);
+    const payload = await response.json();
+    if (payload?.success && payload?.data?.questions?.length) {
+      questions = payload.data.questions;
+      quizMeta = {
+        attemptId: payload.data.attempt_id,
+        title: payload.data.title ?? quizMeta.title,
+        duration: Number(payload.data.duration ?? (payload.data.questions.length * 60))
+      };
+    }
+  }
+}
+
+async function init() {
+  window.Telegram?.WebApp?.ready();
+  await loadQuizData();
+  initState();
+  document.querySelector('.exam-title').textContent = quizMeta.title;
+  document.querySelector('.result-sub').textContent = quizMeta.title;
+  renderQuestion();
+  startTimer();
+}
+
+init();
 </script>
 </body>
 </html>

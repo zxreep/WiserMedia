@@ -91,11 +91,14 @@ Create a Render Web Service pointing to `bot-main/`.
 ### Quiz flow
 1. Callback `start_quiz` -> `GET /quizzes`.
 2. If empty: show “No quizzes” + refresh/leaderboard buttons.
-3. For each quiz, bot sends a URL button to `{PUBLIC_BASE_URL}/quiz` with query params:
+3. On quiz selection (`open_quiz_{id}`), bot creates attempt via `POST /quizzes/:id/start`.
+4. Bot sends a **Telegram Web App button** (`web_app`) pointing to `{PUBLIC_BASE_URL}/quiz` with query params:
+   - `attempt_id`
    - `quizId`
    - `userId`
    - `telegramId`
-4. User takes quiz on the web app instead of answering questions in chat.
+   - `api_base`
+5. User completes the quiz inside Telegram Web App.
 
 ### Leaderboard flow
 - Callback `show_leaderboard` -> `GET /leaderboard/global`

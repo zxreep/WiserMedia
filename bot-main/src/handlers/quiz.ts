@@ -1,16 +1,18 @@
 import type { Bot } from 'grammy';
 import { InlineKeyboard } from 'grammy';
-import { getQuizzes } from '../api-client.js';
+import { getQuizzes, startQuiz } from '../api-client.js';
 import { getSession } from '../bot.js';
 import { config } from '../config.js';
 import { emptyQuizKeyboard } from '../keyboards/mainMenu.js';
-import { quizSelectKeyboard } from '../keyboards/quiz.js';
+import { quizLaunchKeyboard } from '../keyboards/quiz.js';
 
-function buildQuizWebAppUrl(baseUrl: string, payload: { quizId: number; userId: number; telegramId: number }): string {
+function buildQuizWebAppUrl(baseUrl: string, payload: { attemptId: number; quizId: number; userId: number; telegramId: number }): string {
   const url = new URL(baseUrl);
+  url.searchParams.set('attempt_id', String(payload.attemptId));
   url.searchParams.set('quizId', String(payload.quizId));
   url.searchParams.set('userId', String(payload.userId));
   url.searchParams.set('telegramId', String(payload.telegramId));
+  url.searchParams.set('api_base', config.apiBaseUrl);
   return url.toString();
 }
 
@@ -40,12 +42,7 @@ export function registerQuizHandlers(bot: Bot) {
 
       const keyboard = new InlineKeyboard();
       quizzes.forEach((quiz, index) => {
-        const webAppUrl = buildQuizWebAppUrl(hostedQuizBaseUrl, {
-          quizId: quiz.id,
-          userId: session.user_id,
-          telegramId: from.id
-        });
-        keyboard.url(`📝 ${quiz.title}`, webAppUrl);
+        keyboard.text(`📝 ${quiz.title}`, `open_quiz_${quiz.id}`);
         if (index !== quizzes.length - 1) keyboard.row();
       });
 
@@ -58,24 +55,30 @@ export function registerQuizHandlers(bot: Bot) {
   });
 
   bot.callbackQuery(/^open_quiz_(\d+)$/, async (ctx) => {
-    await ctx.answerCallbackQuery();
-    const from = ctx.from;
-    if (!from) return;
-    const session = getSession(from.id);
-    if (!session) {
-      await ctx.reply('Please use /start first.');
-      return;
+    try {
+      await ctx.answerCallbackQuery();
+      const from = ctx.from;
+      if (!from) return;
+      const session = getSession(from.id);
+      if (!session) {
+        await ctx.reply('Please use /start first.');
+        return;
+      }
+
+      const quizId = Number(ctx.match[1]);
+      const started = await startQuiz(quizId, session.user_id);
+      const webAppUrl = buildQuizWebAppUrl(hostedQuizBaseUrl, {
+        attemptId: started.attempt_id,
+        quizId,
+        userId: session.user_id,
+        telegramId: from.id
+      });
+
+      await ctx.reply('🚀 Your quiz attempt is ready. Open it inside Telegram:', {
+        reply_markup: quizLaunchKeyboard(webAppUrl)
+      });
+    } catch {
+      await ctx.reply('⚠️ Something went wrong. Please try again.');
     }
-
-    const quizId = Number(ctx.match[1]);
-    const webAppUrl = buildQuizWebAppUrl(hostedQuizBaseUrl, {
-      quizId,
-      userId: session.user_id,
-      telegramId: from.id
-    });
-
-    await ctx.reply('🌐 This quiz now runs on the web app. Open it below:', {
-      reply_markup: quizSelectKeyboard(quizId, 'Open Quiz', webAppUrl)
-    });
   });
 }

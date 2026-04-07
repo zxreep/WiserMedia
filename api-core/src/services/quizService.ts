@@ -152,3 +152,50 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
     };
   });
 }
+
+export async function getWebAppQuiz(attemptId: number) {
+  const attempt = await dbQuery<{ id: number; quiz_id: number; title: string; duration_minutes: number }>(
+    `SELECT qa.id, qa.quiz_id, q.title, q.duration_minutes
+     FROM quiz_attempts qa
+     INNER JOIN quizzes q ON q.id = qa.quiz_id
+     WHERE qa.id = $1`,
+    [attemptId]
+  );
+
+  if (attempt.rows.length === 0) {
+    throw new Error('invalid attempt');
+  }
+
+  const questions = await dbQuery<{
+    id: number;
+    question_text: string;
+    options: string;
+    question_order: number;
+  }>(
+    `SELECT id, question_text, options::text, question_order
+     FROM quiz_questions
+     WHERE quiz_id = $1
+     ORDER BY question_order ASC`,
+    [attempt.rows[0].quiz_id]
+  );
+
+  return {
+    attempt_id: attemptId,
+    title: attempt.rows[0].title,
+    duration: attempt.rows[0].duration_minutes * 60,
+    questions: questions.rows.map((q) => ({
+      id: q.id,
+      question: q.question_text,
+      options: JSON.parse(q.options)
+    }))
+  };
+}
+
+export async function submitWebAppQuiz(attemptId: number, answers: SubmitAnswer[]) {
+  const attempt = await dbQuery<{ quiz_id: number }>('SELECT quiz_id FROM quiz_attempts WHERE id = $1', [attemptId]);
+  if (attempt.rows.length === 0) {
+    throw new Error('invalid attempt');
+  }
+
+  return submitQuiz(attempt.rows[0].quiz_id, attemptId, answers);
+}

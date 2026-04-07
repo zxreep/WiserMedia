@@ -90,6 +90,8 @@ Response:
 - `GET /quizzes`
 - `POST /quizzes/:id/start`
 - `POST /quizzes/:id/submit`
+- `GET /webapp/quiz?attempt_id=10`
+- `POST /webapp/submit`
 
 Start request body:
 ```json
@@ -143,15 +145,15 @@ Submit request body:
 1. On 🎯, bot calls `GET /quizzes`.
 2. Bot renders list of quizzes.
 3. On user quiz selection, bot calls `POST /quizzes/:id/start` with `user_id`.
-4. API returns `attempt_id` and questions.
-5. Bot asks each question and captures options.
+4. Bot launches Telegram Web App with `attempt_id`.
+5. Web App loads quiz data using `GET /webapp/quiz`.
 
 ### 3) Submit flow
-1. Bot collects answers array:
+1. Web App collects answers array:
    - `{ question_id, selected_option }`
-2. Bot calls `POST /quizzes/:id/submit`.
+2. Web App calls `POST /webapp/submit`.
 3. API returns score summary and `xp_earned`.
-4. Bot displays result and XP earned.
+4. Web App may pass payload back to bot via Telegram `sendData`.
 
 ### 4) Leaderboard flow
 1. On 🏆, bot calls `GET /leaderboard/global`.
