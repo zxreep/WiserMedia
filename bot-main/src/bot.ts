@@ -1,5 +1,8 @@
 import Fastify from 'fastify';
 import { Bot, webhookCallback } from 'grammy';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { registerStartHandlers } from './handlers/start.js';
 import { registerQuizHandlers } from './handlers/quiz.js';
@@ -55,10 +58,17 @@ bot.catch(async (error) => {
 
 async function bootstrap() {
   const server = Fastify({ logger: true });
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const quizHtmlPath = path.resolve(__dirname, '../../nta-mock-test.html');
 
   await bot.api.setWebhook(config.webhookUrl);
 
   server.post('/telegram/webhook', webhookCallback(bot, 'fastify'));
+  server.get('/quiz', async (_, reply) => {
+    const html = await readFile(quizHtmlPath, 'utf8');
+    return reply.type('text/html; charset=utf-8').send(html);
+  });
 
   server.get('/health', async () => ({ success: true, data: { status: 'ok' } }));
 
