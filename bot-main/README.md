@@ -99,6 +99,7 @@ Create a Render Web Service pointing to `bot-main/`.
    - `telegramId`
    - `api_base`
 5. User completes the quiz inside Telegram Web App.
+6. Web App calls `Telegram.WebApp.sendData(...)`; bot handles `message:web_app_data` and submits answers to `POST /webapp/submit`.
 
 ### Leaderboard flow
 - Callback `show_leaderboard` -> `GET /leaderboard/global`

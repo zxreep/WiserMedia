@@ -44,10 +44,10 @@ export async function submitQuizController(
 }
 
 export async function webAppQuizController(
-  request: FastifyRequest<{ Querystring: { attempt_id?: string } }>,
+  request: FastifyRequest<{ Params: { attempt_id?: string } }>,
   reply: FastifyReply
 ) {
-  const attemptId = Number(request.query.attempt_id);
+  const attemptId = Number(request.params.attempt_id);
   if (!Number.isInteger(attemptId)) {
     return reply.code(400).send({ success: false, error: 'invalid attempt' });
   }

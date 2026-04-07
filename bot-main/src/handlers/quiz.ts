@@ -1,6 +1,6 @@
 import type { Bot } from 'grammy';
 import { InlineKeyboard } from 'grammy';
-import { getQuizzes, startQuiz } from '../api-client.js';
+import { getQuizzes, startQuiz, submitWebAppQuiz } from '../api-client.js';
 import { getSession } from '../bot.js';
 import { config } from '../config.js';
 import { emptyQuizKeyboard } from '../keyboards/mainMenu.js';
@@ -79,6 +79,33 @@ export function registerQuizHandlers(bot: Bot) {
       });
     } catch {
       await ctx.reply('⚠️ Something went wrong. Please try again.');
+    }
+  });
+
+  bot.on('message:web_app_data', async (ctx) => {
+    try {
+      const raw = ctx.message.web_app_data?.data;
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        attempt_id?: number;
+        answers?: Array<{ question_id: number; selected_option: number }>;
+      };
+
+      if (!parsed.attempt_id || !Array.isArray(parsed.answers)) {
+        await ctx.reply('⚠️ Invalid quiz submission payload.');
+        return;
+      }
+
+      const result = await submitWebAppQuiz({
+        attempt_id: parsed.attempt_id,
+        answers: parsed.answers
+      });
+
+      await ctx.reply(
+        `✅ Quiz Submitted!\n\nScore: ${result.score}\nCorrect: ${result.correct}/${result.total}\nXP Earned: +${result.xp_earned}`
+      );
+    } catch {
+      await ctx.reply('⚠️ Something went wrong while submitting your quiz.');
     }
   });
 }

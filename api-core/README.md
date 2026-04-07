@@ -90,7 +90,7 @@ Response:
 - `GET /quizzes`
 - `POST /quizzes/:id/start`
 - `POST /quizzes/:id/submit`
-- `GET /webapp/quiz?attempt_id=10`
+- `GET /webapp/quiz/:attempt_id`
 - `POST /webapp/submit`
 
 Start request body:
