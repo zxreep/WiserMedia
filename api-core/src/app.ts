@@ -18,6 +18,7 @@ export function buildApp() {
 
   app.setErrorHandler((error, _request, reply) => {
     app.log.error(error);
+    const errorMessage = error instanceof Error ? error.message : 'unknown error';
 
     const knownErrors = new Set([
       'invalid quiz',
@@ -29,9 +30,8 @@ export function buildApp() {
       'request already handled',
       'not assigned mentor'
     ]);
-
-    if (knownErrors.has(error.message)) {
-      return reply.code(400).send({ success: false, error: error.message });
+    if (knownErrors.has(errorMessage)) {
+      return reply.code(400).send({ success: false, error: errorMessage });
     }
 
     return reply.code(500).send({ success: false, error: 'Internal server error' });
