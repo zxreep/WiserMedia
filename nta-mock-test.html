@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTA Mock Test - CUET (UG) 2024: Mathematics</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --header-bg: #3b3a8c;
+    --header-text: #fff;
+    --accent: #5c5ab5;
+    --accent2: #e05a2b;
+    --not-visited: #f0f0f0;
+    --not-visited-border: #aaa;
+    --not-answered: #e05a2b;
+    --answered: #27a44a;
+    --marked: #5c5ab5;
+    --answered-marked: #5c5ab5;
+    --current: #f5c542;
+    --bg: #f4f4f8;
+    --panel-bg: #fff;
+    --palette-bg: #eef0f7;
+    --border: #d0d0e0;
+    --text: #1a1a2e;
+    --subtext: #555;
+    --option-hover: #f0effe;
+    --option-selected: #e3e0ff;
+    --option-border: #5c5ab5;
+    --font-body: 'DM Sans', sans-serif;
+    --font-serif: 'Source Serif 4', serif;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(60,58,140,0.09);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── TOP HEADER ─── */
+  .top-bar {
+    background: var(--header-bg);
+    color: var(--header-text);
+    text-align: center;
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 8px 16px;
+    text-transform: uppercase;
+  }
+
+  .main-header {
+    background: #fff;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .nta-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nta-logo-icon {
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, #f5a623 0%, #e05a2b 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(224,90,43,0.25);
+  }
+
+  .nta-logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .nta-logo-text .hindi { font-size: 0.7rem; color: #555; }
+  .nta-logo-text .english { font-size: 0.8rem; font-weight: 700; color: var(--header-bg); }
+  .nta-logo-text .tagline { font-size: 0.6rem; color: var(--answered); font-weight: 600; }
+
+  .exam-title {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--header-bg);
+    font-family: var(--font-body);
+    letter-spacing: -0.01em;
+    border-left: 2px solid var(--border);
+    padding-left: 14px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .timer-box {
+    background: var(--header-bg);
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow);
+    min-width: 90px;
+    text-align: center;
+  }
+
+  .timer-box.warning { background: #e05a2b; }
+  .timer-box.danger { background: #c0392b; animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .candidate-info {
+    font-size: 0.82rem;
+    color: #555;
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main-layout {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    min-height: 0;
+  }
+
+  /* ─── QUESTION PANEL ─── */
+  .question-panel {
+    flex: 1;
+    min-width: 0;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    max-height: calc(100vh - 140px);
+  }
+
+  .section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eef0f7;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .q-number-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .q-number {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: var(--header-bg);
+  }
+
+  .q-marks {
+    font-size: 0.8rem;
+    color: #888;
+    background: #f8f8ff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 10px;
+  }
+
+  .q-marks span { color: var(--answered); font-weight: 700; }
+  .q-marks span.neg { color: var(--not-answered); }
+
+  .q-divider {
+    border: none;
+    border-top: 1.5px dashed var(--border);
+  }
+
+  .passage-box {
+    background: #f9f9ff;
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    font-family: var(--font-serif);
+    font-size: 0.96rem;
+    line-height: 1.7;
+    color: #2a2a3e;
+  }
+
+  .passage-box .passage-title {
+    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--accent);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .question-text {
+    font-family: var(--font-serif);
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .question-text .q-sub {
+    font-weight: 600;
+    font-family: var(--font-body);
+  }
+
+  /* Math rendering */
+  .math { font-style: italic; }
+
+  /* Options */
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .option-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    background: #fff;
+    font-size: 0.97rem;
+    line-height: 1.5;
+    user-select: none;
+  }
+
+  .option-item:hover { background: var(--option-hover); border-color: var(--accent); }
+
+  .option-item.selected {
+    background: var(--option-selected);
+    border-color: var(--option-border);
+    box-shadow: 0 0 0 3px rgba(92,90,181,0.12);
+  }
+
+  .option-radio {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #aaa;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .option-item.selected .option-radio {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .option-item.selected .option-radio::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+  }
+
+  .option-label { font-weight: 600; color: var(--accent); min-width: 20px; }
+
+  .option-text { font-family: var(--font-serif); flex: 1; }
+
+  /* ─── ACTION BUTTONS ─── */
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 24px;
+    background: #fff;
+    border-top: 1.5px solid var(--border);
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .action-left, .action-right {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s;
+    white-space: nowrap;
+  }
+
+  .btn-primary { background: var(--header-bg); color: #fff; border-color: var(--header-bg); }
+  .btn-primary:hover { background: #2e2d75; }
+
+  .btn-mark { background: #7c4dff; color: #fff; border-color: #7c4dff; }
+  .btn-mark:hover { background: #6a3de8; }
+
+  .btn-clear { background: #fff; color: var(--accent2); border-color: var(--accent2); }
+  .btn-clear:hover { background: #fff5f2; }
+
+  .btn-prev { background: #fff; color: var(--text); border-color: var(--border); }
+  .btn-prev:hover { background: #f5f5ff; border-color: var(--accent); }
+
+  .btn-submit { background: var(--answered); color: #fff; border-color: var(--answered); }
+  .btn-submit:hover { background: #1e8a3a; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 290px;
+    flex-shrink: 0;
+    background: var(--palette-bg);
+    border-left: 1.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--header-bg);
+    margin-bottom: 12px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  /* Palette */
+  .palette-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .palette-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: var(--marked);
+  }
+
+  .palette-btn:hover { transform: scale(1.12); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+  .palette-btn.not-visited { background: #bbb; color: #fff; }
+  .palette-btn.not-answered { background: var(--not-answered); }
+  .palette-btn.answered { background: var(--answered); }
+  .palette-btn.marked { background: var(--marked); }
+  .palette-btn.answered-marked { background: var(--answered-marked); }
+  .palette-btn.current { background: var(--current); color: #333; box-shadow: 0 0 0 3px rgba(245,197,66,0.4); }
+
+  /* Legend */
+  .legend-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--subtext);
+  }
+
+  .legend-badge {
+    width: 36px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .legend-badge.not-visited { background: #bbb; color: #555; border: 1.5px solid #aaa; }
+  .legend-badge.not-answered { background: var(--not-answered); }
+  .legend-badge.answered { background: var(--answered); }
+  .legend-badge.marked { background: var(--marked); }
+  .legend-badge.answered-marked { background: var(--answered-marked); position: relative; }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat-chip {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    text-align: center;
+    font-size: 0.78rem;
+  }
+
+  .stat-chip .count { font-size: 1.1rem; font-weight: 800; color: var(--accent); display: block; }
+
+  /* ─── MOBILE TOGGLE ─── */
+  .mobile-palette-toggle {
+    display: none;
+    background: var(--header-bg);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: slideUp 0.2s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-title { font-size: 1.15rem; font-weight: 700; color: var(--header-bg); margin-bottom: 12px; }
+  .modal-body { font-size: 0.9rem; color: var(--subtext); line-height: 1.6; margin-bottom: 20px; }
+  .modal-body strong { color: var(--text); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ─── RESULT SCREEN ─── */
+  .result-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  .result-screen.show { display: flex; }
+
+  .result-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 36px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 8px 40px rgba(92,90,181,0.15);
+  }
+
+  .result-title { font-size: 1.6rem; font-weight: 800; color: var(--header-bg); margin-bottom: 6px; }
+  .result-sub { color: var(--subtext); font-size: 0.92rem; margin-bottom: 24px; }
+
+  .score-ring {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: conic-gradient(var(--answered) var(--pct, 0%), #eee var(--pct, 0%));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    position: relative;
+  }
+
+  .score-ring::after {
+    content: '';
+    position: absolute;
+    inset: 14px;
+    background: #fff;
+    border-radius: 50%;
+  }
+
+  .score-ring-inner {
+    position: relative;
+    z-index: 1;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--header-bg);
+  }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .result-stat { background: var(--bg); border-radius: 10px; padding: 12px 8px; }
+  .result-stat .val { font-size: 1.35rem; font-weight: 800; display: block; margin-bottom: 2px; }
+  .result-stat .lbl { font-size: 0.75rem; color: var(--subtext); }
+  .result-stat.green .val { color: var(--answered); }
+  .result-stat.red .val { color: var(--not-answered); }
+  .result-stat.blue .val { color: var(--accent); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    .main-layout { flex-direction: column; }
+
+    .exam-title { font-size: 1.1rem; padding-left: 10px; }
+
+    .question-panel {
+      max-height: none;
+      padding: 16px;
+    }
+
+    .sidebar {
+      width: 100%;
+      max-height: none;
+      border-left: none;
+      border-top: 1.5px solid var(--border);
+      display: none;
+    }
+
+    .sidebar.mobile-open { display: flex; }
+
+    .mobile-palette-toggle { display: block; }
+
+    .action-bar {
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 16px;
+    }
+
+    .action-left, .action-right { width: 100%; justify-content: center; }
+
+    .main-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+    .header-right { align-self: flex-end; }
+
+    .timer-box { font-size: 1rem; }
+  }
+
+  @media (max-width: 480px) {
+    .btn { padding: 8px 12px; font-size: 0.82rem; }
+    .palette-btn { width: 34px; height: 34px; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">NTA (Mock Test / Practice)</div>
+
+<!-- MAIN HEADER -->
+<header class="main-header">
+  <div class="header-left">
+    <div class="nta-logo">
+      <div class="nta-logo-icon">NTA</div>
+      <div class="nta-logo-text">
+        <span class="hindi">राष्ट्रीय परीक्षा एजेंसी</span>
+        <span class="english">National Testing Agency</span>
+        <span class="tagline">Excellence in Assessment</span>
+      </div>
+    </div>
+    <div class="exam-title">CUET (UG) – 2024 : Mathematics</div>
+  </div>
+  <div class="header-right">
+    <div class="candidate-info">
+      <div><strong>Candidate:</strong> Demo Student</div>
+      <div><strong>Roll No:</strong> 240000001</div>
+    </div>
+    <div class="timer-box" id="timer">03:00:00</div>
+  </div>
+</header>
+
+<!-- MOBILE TOGGLE -->
+<button class="mobile-palette-toggle" id="mobileToggle" onclick="toggleSidebar()">
+  📋 Question Palette &amp; Status
+</button>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout" id="mainLayout">
+
+  <!-- QUESTION PANEL -->
+  <main class="question-panel" id="questionPanel">
+    <div class="q-number-row">
+      <div class="q-number" id="qNumberDisplay">Question No. 1</div>
+      <div class="q-marks">Marks: <span>+5</span> &nbsp;|&nbsp; Negative: <span class="neg">–1</span></div>
+    </div>
+    <hr class="q-divider">
+    <div id="passageArea"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options-list" id="optionsList"></div>
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Stats -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Progress</div>
+      <div class="stats-row" id="statsRow">
+        <div class="stat-chip"><span class="count" id="statAnswered">0</span>Answered</div>
+        <div class="stat-chip"><span class="count" id="statMarked">0</span>Marked</div>
+        <div class="stat-chip"><span class="count" id="statNotAns">50</span>Not Ans.</div>
+      </div>
+    </div>
+
+    <!-- Palette -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Question Palette</div>
+      <div class="palette-grid" id="paletteGrid"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Legend</div>
+      <div class="legend-grid">
+        <div class="legend-item"><div class="legend-badge not-visited">–</div><span>Not Visited</span></div>
+        <div class="legend-item"><div class="legend-badge not-answered">✗</div><span>Not Answered (Visited)</span></div>
+        <div class="legend-item"><div class="legend-badge answered">✓</div><span>Answered</span></div>
+        <div class="legend-item"><div class="legend-badge marked">⚑</div><span>Marked for Review</span></div>
+        <div class="legend-item"><div class="legend-badge answered-marked">✓⚑</div><span>Answered &amp; Marked for Review</span></div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar" id="actionBar">
+  <div class="action-left">
+    <button class="btn btn-mark" onclick="markForReview()">⚑ Mark for Review &amp; Next</button>
+    <button class="btn btn-clear" onclick="clearResponse()">✕ Clear Response</button>
+  </div>
+  <div class="action-right">
+    <button class="btn btn-prev" onclick="navigate(-1)">◀ Previous</button>
+    <button class="btn btn-primary" onclick="saveAndNext()">Save &amp; Next ▶</button>
+    <button class="btn btn-submit" onclick="showSubmitModal()">Submit Test</button>
+  </div>
+</div>
+
+<!-- RESULT SCREEN (hidden initially) -->
+<div class="result-screen" id="resultScreen">
+  <div class="result-card">
+    <div class="result-title">🎉 Test Submitted!</div>
+    <div class="result-sub">CUET (UG) 2024 – Mathematics</div>
+    <div class="score-ring" id="scoreRing">
+      <div class="score-ring-inner" id="scoreDisplay">0</div>
+    </div>
+    <div class="result-stats" id="resultStats"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="restartTest()">🔄 Restart Test</button>
+  </div>
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Submit Test?</div>
+    <div class="modal-body" id="modalBody">Are you sure you want to submit the test?</div>
+    <div class="modal-footer">
+      <button class="btn btn-prev" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-submit" onclick="submitTest()">Yes, Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// QUESTION BANK (50 CUET-style Math questions)
+// ══════════════════════════════════════════
+const questions = [
+  // ── Passage 1: Missile Motion (Q1–3)
+  {
+    id: 1, passage: `<div class="passage-box"><div class="passage-title">Passage (Questions 1 to 3)</div>The equation of motion of a missile is x = 3t, y = −4t, z = t, where time 't' is in seconds and distance is in kilometres.</div>`,
+    text: "The path of the missile represents which geometric curve?",
+    options: ["A straight line", "A parabola", "A circle", "An ellipse"],
+    answer: 0
+  },
+  {
+    id: 2, passage: null,
+    text: "The direction ratios of the path of the missile are:",
+    options: ["3, –4, 1", "3, 4, 1", "–3, 4, –1", "1, –4, 3"],
+    answer: 0
+  },
+  {
+    id: 3, passage: null,
+    text: "At a certain instant, if the missile is above sea level where 2x + y + 3z = 1, and the missile's position is (1, 1, 2), the image of the position of the rocket in the sea is:",
+    options: ["(−9/7, −1/7, −10/7)", "(9/7, −1/7, −10/7)", "(−9/7, 1/7, −10/7)", "(−9/7, −1/7, 10/7)"],
+    answer: 0
+  },
+  // ── Matrices / Determinants
+  {
+    id: 4, passage: null,
+    text: "If A is a square matrix of order 3 with |A| = 4, then |2A| equals:",
+    options: ["8", "16", "32", "64"],
+    answer: 2
+  },
+  {
+    id: 5, passage: null,
+    text: "For a 3×3 matrix A, if A · adj(A) = kI, then k equals:",
+    options: ["|A|", "|A|²", "|A|³", "0"],
+    answer: 0
+  },
+  {
+    id: 6, passage: null,
+    text: "The number of all possible matrices of order 2×2 with each entry 0 or 1 is:",
+    options: ["16", "4", "8", "12"],
+    answer: 0
+  },
+  {
+    id: 7, passage: null,
+    text: "If A = [[2, 3], [1, 4]] and B = [[1, –2], [–1, 3]], then AB is:",
+    options: ["[[−1, 5], [−3, 10]]", "[[−1, 5], [3, 10]]", "[[5, −1], [10, 3]]", "[[−1, −5], [3, 10]]"],
+    answer: 1
+  },
+  {
+    id: 8, passage: null,
+    text: "The value of the determinant |[1, 2, 3], [4, 5, 6], [7, 8, 9]| is:",
+    options: ["0", "1", "–1", "45"],
+    answer: 0
+  },
+  // ── Calculus – Differentiation
+  {
+    id: 9, passage: null,
+    text: "If y = sin⁻¹(2x√(1−x²)), then dy/dx is:",
+    options: ["2/√(1−x²)", "1/√(1−x²)", "–2/√(1−x²)", "2x/√(1−x²)"],
+    answer: 0
+  },
+  {
+    id: 10, passage: null,
+    text: "The derivative of log(sin x) with respect to x is:",
+    options: ["cot x", "tan x", "–cot x", "–tan x"],
+    answer: 0
+  },
+  {
+    id: 11, passage: null,
+    text: "If f(x) = x², then f'(x) at x = 3 is:",
+    options: ["6", "9", "3", "12"],
+    answer: 0
+  },
+  {
+    id: 12, passage: null,
+    text: "For the function f(x) = eˣ, which of the following is true?",
+    options: ["f'(x) = f(x)", "f'(x) = 1/f(x)", "f'(x) = –f(x)", "f'(x) = f(x)²"],
+    answer: 0
+  },
+  {
+    id: 13, passage: null,
+    text: "The function f(x) = |x| is not differentiable at:",
+    options: ["x = 0", "x = 1", "x = –1", "x = 2"],
+    answer: 0
+  },
+  // ── Integration
+  {
+    id: 14, passage: null,
+    text: "∫ (1/x) dx equals:",
+    options: ["log|x| + C", "x⁻² + C", "–1/x² + C", "1/x² + C"],
+    answer: 0
+  },
+  {
+    id: 15, passage: null,
+    text: "∫₀¹ x² dx equals:",
+    options: ["1/3", "1/2", "1", "2/3"],
+    answer: 0
+  },
+  {
+    id: 16, passage: null,
+    text: "∫ eˣ(1 + x) dx equals:",
+    options: ["xeˣ + C", "eˣ + C", "eˣ(x−1) + C", "eˣx + C"],
+    answer: 0
+  },
+  {
+    id: 17, passage: null,
+    text: "The value of ∫₀^(π/2) sin x dx is:",
+    options: ["1", "0", "2", "π/2"],
+    answer: 0
+  },
+  {
+    id: 18, passage: null,
+    text: "∫ sec²x dx equals:",
+    options: ["tan x + C", "cot x + C", "sec x tan x + C", "cosec x + C"],
+    answer: 0
+  },
+  // ── 3D Geometry
+  {
+    id: 19, passage: null,
+    text: "The distance between points (1, 2, 3) and (4, 6, 3) is:",
+    options: ["5", "√41", "√50", "7"],
+    answer: 0
+  },
+  {
+    id: 20, passage: null,
+    text: "Direction cosines of the x-axis are:",
+    options: ["(1, 0, 0)", "(0, 1, 0)", "(0, 0, 1)", "(1, 1, 0)"],
+    answer: 0
+  },
+  {
+    id: 21, passage: null,
+    text: "The equation of a plane passing through origin with normal (1, 2, 3) is:",
+    options: ["x + 2y + 3z = 0", "x + 2y + 3z = 1", "2x + y + 3z = 0", "x – 2y + 3z = 0"],
+    answer: 0
+  },
+  // ── Vectors
+  {
+    id: 22, passage: null,
+    text: "If |a⃗| = 3 and |b⃗| = 4 and a⃗ · b⃗ = 0, then |a⃗ + b⃗| equals:",
+    options: ["5", "7", "12", "1"],
+    answer: 0
+  },
+  {
+    id: 23, passage: null,
+    text: "The unit vector along i⃗ + j⃗ is:",
+    options: ["(i⃗ + j⃗)/√2", "(i⃗ + j⃗)/2", "(i⃗ – j⃗)/√2", "i⃗ + j⃗"],
+    answer: 0
+  },
+  {
+    id: 24, passage: null,
+    text: "If a⃗ = 2i⃗ + 3j⃗ – k⃗ and b⃗ = i⃗ – 2j⃗ + k⃗, then a⃗ · b⃗ equals:",
+    options: ["–3", "3", "7", "–7"],
+    answer: 0
+  },
+  // ── Linear Programming
+  {
+    id: 25, passage: null,
+    text: "The feasible region of an LPP is always:",
+    options: ["A convex set", "A concave set", "A circle", "An unbounded set"],
+    answer: 0
+  },
+  {
+    id: 26, passage: null,
+    text: "Maximise Z = 3x + 5y, subject to x ≤ 4, y ≤ 6, x + y ≤ 8, x,y ≥ 0. The maximum value is:",
+    options: ["34", "30", "36", "32"],
+    answer: 0
+  },
+  // ── Probability
+  {
+    id: 27, passage: null,
+    text: "If P(A) = 0.3, P(B) = 0.4, P(A∩B) = 0.12, find P(A|B):",
+    options: ["0.3", "0.4", "0.5", "0.12"],
+    answer: 0
+  },
+  {
+    id: 28, passage: null,
+    text: "Two cards are drawn without replacement from a pack of 52. The probability both are kings is:",
+    options: ["1/221", "4/52", "1/52", "1/169"],
+    answer: 0
+  },
+  {
+    id: 29, passage: null,
+    text: "In a binomial distribution B(n, p), the mean is 6 and variance is 2. The value of p is:",
+    options: ["2/3", "1/3", "1/2", "3/4"],
+    answer: 1
+  },
+  {
+    id: 30, passage: null,
+    text: "Bayes' Theorem is used to find:",
+    options: ["Posterior probability", "Prior probability", "Marginal probability", "Conditional probability only"],
+    answer: 0
+  },
+  // ── Relations & Functions
+  {
+    id: 31, passage: null,
+    text: "A relation R on set A is called symmetric if:",
+    options: ["(a, b) ∈ R ⇒ (b, a) ∈ R", "(a, a) ∈ R for all a", "(a, b) ∈ R and (b, c) ∈ R ⇒ (a, c) ∈ R", "(a, b) ∈ R ⇒ a = b"],
+    answer: 0
+  },
+  {
+    id: 32, passage: null,
+    text: "f: R → R defined by f(x) = 2x is:",
+    options: ["Bijective", "Only injective", "Only surjective", "Neither injective nor surjective"],
+    answer: 0
+  },
+  // ── Inverse Trigonometry
+  {
+    id: 33, passage: null,
+    text: "The principal value of sin⁻¹(1/2) is:",
+    options: ["π/6", "π/3", "π/4", "5π/6"],
+    answer: 0
+  },
+  {
+    id: 34, passage: null,
+    text: "tan⁻¹(1) + tan⁻¹(–1) equals:",
+    options: ["0", "π/4", "π/2", "π"],
+    answer: 0
+  },
+  {
+    id: 35, passage: null,
+    text: "The range of cos⁻¹x is:",
+    options: ["[0, π]", "[–π/2, π/2]", "(0, π)", "(–π, π)"],
+    answer: 0
+  },
+  // ── Application of Derivatives
+  {
+    id: 36, passage: null,
+    text: "The function f(x) = x³ – 3x² + 4 is increasing on:",
+    options: ["(–∞, 0) ∪ (2, ∞)", "(0, 2)", "(–1, 2)", "(–∞, ∞)"],
+    answer: 0
+  },
+  {
+    id: 37, passage: null,
+    text: "The maximum value of f(x) = sin x + cos x is:",
+    options: ["√2", "2", "1", "√3"],
+    answer: 0
+  },
+  {
+    id: 38, passage: null,
+    text: "If the radius of a circle is increasing at 0.7 cm/s, the rate of increase of circumference is:",
+    options: ["1.4π cm/s", "0.7π cm/s", "2.8π cm/s", "0.35π cm/s"],
+    answer: 0
+  },
+  // ── Differential Equations
+  {
+    id: 39, passage: null,
+    text: "The order of the differential equation d²y/dx² + (dy/dx)³ + 6y = 0 is:",
+    options: ["2", "3", "1", "6"],
+    answer: 0
+  },
+  {
+    id: 40, passage: null,
+    text: "The general solution of dy/dx = eˣ is:",
+    options: ["y = eˣ + C", "y = eˣ", "y = –eˣ + C", "y = e⁻ˣ + C"],
+    answer: 0
+  },
+  // ── Passage 2: Area Under Curve (Q41–45)
+  {
+    id: 41, passage: `<div class="passage-box"><div class="passage-title">Passage (Questions 41 to 45)</div>Consider the region bounded by the parabola y = x² and the line y = x in the first quadrant.</div>`,
+    text: "The parabola y = x² and line y = x intersect at x =",
+    options: ["0 and 1", "0 and –1", "1 and 2", "–1 and 1"],
+    answer: 0
+  },
+  {
+    id: 42, passage: null,
+    text: "The area between y = x and y = x² from x = 0 to x = 1 is:",
+    options: ["1/6", "1/3", "1/2", "2/3"],
+    answer: 0
+  },
+  {
+    id: 43, passage: null,
+    text: "The area bounded by y = x², x-axis, and x = 3 is:",
+    options: ["9", "27/3 = 9", "6", "27"],
+    answer: 0
+  },
+  {
+    id: 44, passage: null,
+    text: "Using integration, the area of a circle x² + y² = a² is:",
+    options: ["πa²", "2πa²", "πa²/2", "4πa"],
+    answer: 0
+  },
+  {
+    id: 45, passage: null,
+    text: "The area enclosed by the ellipse x²/a² + y²/b² = 1 is:",
+    options: ["πab", "πa²b", "2πab", "πab²"],
+    answer: 0
+  },
+  // ── Continuity & Limits
+  {
+    id: 46, passage: null,
+    text: "lim(x→0) (sin x / x) equals:",
+    options: ["1", "0", "∞", "–1"],
+    answer: 0
+  },
+  {
+    id: 47, passage: null,
+    text: "f(x) = x² is continuous at x = 2. The value of f(2) is:",
+    options: ["4", "2", "0", "8"],
+    answer: 0
+  },
+  {
+    id: 48, passage: null,
+    text: "A function f is said to be continuous at x = a if:",
+    options: ["lim(x→a) f(x) = f(a)", "f(a) exists only", "lim f(x) exists only", "f'(a) = 0"],
+    answer: 0
+  },
+  {
+    id: 49, passage: null,
+    text: "The value of lim(x→2) (x² – 4)/(x – 2) is:",
+    options: ["4", "2", "0", "∞"],
+    answer: 0
+  },
+  {
+    id: 50, passage: null,
+    text: "The derivative of xⁿ with respect to x is:",
+    options: ["nxⁿ⁻¹", "nxⁿ", "(n–1)xⁿ⁻¹", "xⁿ/n"],
+    answer: 0
+  }
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const TOTAL = questions.length;
+const STATUS = { NOT_VISITED: 0, NOT_ANSWERED: 1, ANSWERED: 2, MARKED: 3, ANSWERED_MARKED: 4 };
+const statusClass = ['not-visited', 'not-answered', 'answered', 'marked', 'answered-marked'];
+
+let state = {
+  current: 0,
+  answers: Array(TOTAL).fill(null),
+  status: Array(TOTAL).fill(STATUS.NOT_VISITED),
+  timerSec: 3 * 60 * 60,
+  timerInterval: null,
+  submitted: false
+};
+
+// ══════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════
+function startTimer() {
+  state.timerInterval = setInterval(() => {
+    state.timerSec--;
+    const h = String(Math.floor(state.timerSec / 3600)).padStart(2, '0');
+    const m = String(Math.floor((state.timerSec % 3600) / 60)).padStart(2, '0');
+    const s = String(state.timerSec % 60).padStart(2, '0');
+    const el = document.getElementById('timer');
+    el.textContent = `${h}:${m}:${s}`;
+    if (state.timerSec <= 300) el.className = 'timer-box warning';
+    if (state.timerSec <= 60) el.className = 'timer-box danger';
+    if (state.timerSec <= 0) { clearInterval(state.timerInterval); submitTest(); }
+  }, 1000);
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function renderQuestion() {
+  const i = state.current;
+  const q = questions[i];
+
+  document.getElementById('qNumberDisplay').textContent = `Question No. ${q.id}`;
+
+  // Passage
+  const passageArea = document.getElementById('passageArea');
+  if (q.passage) {
+    passageArea.innerHTML = q.passage;
+  } else {
+    // Check if previous question in same passage group had one
+    passageArea.innerHTML = '';
+  }
+
+  document.getElementById('questionText').innerHTML =
+    `<span class="q-sub">${q.id}.</span> ${q.text}`;
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  const labels = ['1)', '2)', '3)', '4)'];
+  q.options.forEach((opt, idx) => {
+    const div = document.createElement('div');
+    div.className = 'option-item' + (state.answers[i] === idx ? ' selected' : '');
+    div.innerHTML = `<div class="option-radio"></div><span class="option-label">${labels[idx]}</span><span class="option-text">${opt}</span>`;
+    div.onclick = () => selectOption(idx);
+    list.appendChild(div);
+  });
+
+  renderPalette();
+  updateStats();
+
+  // Scroll top
+  document.getElementById('questionPanel').scrollTop = 0;
+}
+
+function selectOption(idx) {
+  state.answers[state.current] = idx;
+  if (state.status[state.current] === STATUS.NOT_VISITED ||
+      state.status[state.current] === STATUS.NOT_ANSWERED) {
+    state.status[state.current] = STATUS.ANSWERED;
+  } else if (state.status[state.current] === STATUS.MARKED) {
+    state.status[state.current] = STATUS.ANSWERED_MARKED;
+  }
+  renderQuestion();
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION & ACTIONS
+// ══════════════════════════════════════════
+function markVisited() {
+  if (state.status[state.current] === STATUS.NOT_VISITED)
+    state.status[state.current] = STATUS.NOT_ANSWERED;
+}
+
+function saveAndNext() {
+  markVisited();
+  if (state.answers[state.current] === null)
+    state.status[state.current] = STATUS.NOT_ANSWERED;
+  navigate(1);
+}
+
+function markForReview() {
+  markVisited();
+  if (state.answers[state.current] !== null)
+    state.status[state.current] = STATUS.ANSWERED_MARKED;
+  else
+    state.status[state.current] = STATUS.MARKED;
+  navigate(1);
+}
+
+function clearResponse() {
+  state.answers[state.current] = null;
+  if (state.status[state.current] === STATUS.ANSWERED)
+    state.status[state.current] = STATUS.NOT_ANSWERED;
+  if (state.status[state.current] === STATUS.ANSWERED_MARKED)
+    state.status[state.current] = STATUS.MARKED;
+  renderQuestion();
+}
+
+function navigate(dir) {
+  markVisited();
+  const next = state.current + dir;
+  if (next >= 0 && next < TOTAL) {
+    state.current = next;
+    renderQuestion();
+  }
+}
+
+function goToQuestion(idx) {
+  markVisited();
+  state.current = idx;
+  if (state.status[idx] === STATUS.NOT_VISITED)
+    state.status[idx] = STATUS.NOT_ANSWERED;
+  renderQuestion();
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('mobile-open');
+}
+
+// ══════════════════════════════════════════
+// PALETTE
+// ══════════════════════════════════════════
+function renderPalette() {
+  const grid = document.getElementById('paletteGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < TOTAL; i++) {
+    const btn = document.createElement('button');
+    btn.className = `palette-btn ${statusClass[state.status[i]]}${i === state.current ? ' current' : ''}`;
+    btn.textContent = i + 1;
+    btn.title = `Q${i + 1}`;
+    btn.onclick = () => goToQuestion(i);
+    grid.appendChild(btn);
+  }
+}
+
+function updateStats() {
+  const answered = state.status.filter(s => s === STATUS.ANSWERED || s === STATUS.ANSWERED_MARKED).length;
+  const marked = state.status.filter(s => s === STATUS.MARKED || s === STATUS.ANSWERED_MARKED).length;
+  const notAns = state.status.filter(s => s === STATUS.NOT_ANSWERED || s === STATUS.NOT_VISITED).length;
+  document.getElementById('statAnswered').textContent = answered;
+  document.getElementById('statMarked').textContent = marked;
+  document.getElementById('statNotAns').textContent = notAns;
+}
+
+// ══════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════
+function showSubmitModal() {
+  const answered = state.status.filter(s => s === STATUS.ANSWERED || s === STATUS.ANSWERED_MARKED).length;
+  const notAns = TOTAL - answered;
+  document.getElementById('modalBody').innerHTML =
+    `<strong>${answered}</strong> questions answered, <strong>${notAns}</strong> not answered.<br><br>Are you sure you want to submit the test? This action cannot be undone.`;
+  document.getElementById('submitModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('submitModal').classList.remove('show');
+}
+
+function submitTest() {
+  clearInterval(state.timerInterval);
+  closeModal();
+  state.submitted = true;
+
+  // Calculate score
+  let correct = 0, wrong = 0, skipped = 0;
+  questions.forEach((q, i) => {
+    if (state.answers[i] === null) skipped++;
+    else if (state.answers[i] === q.answer) correct++;
+    else wrong++;
+  });
+
+  const score = correct * 5 - wrong * 1;
+  const maxScore = TOTAL * 5;
+  const pct = Math.max(0, Math.round((score / maxScore) * 100));
+
+  // Hide test UI
+  document.getElementById('mainLayout').style.display = 'none';
+  document.getElementById('actionBar').style.display = 'none';
+  document.querySelector('.mobile-palette-toggle').style.display = 'none';
+
+  // Show result
+  const rs = document.getElementById('resultScreen');
+  rs.classList.add('show');
+
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('scoreRing').style.setProperty('--pct', `${pct}%`);
+
+  document.getElementById('resultStats').innerHTML = `
+    <div class="result-stat green"><span class="val">${correct}</span><span class="lbl">Correct</span></div>
+    <div class="result-stat red"><span class="val">${wrong}</span><span class="lbl">Wrong</span></div>
+    <div class="result-stat blue"><span class="val">${skipped}</span><span class="lbl">Skipped</span></div>
+  `;
+}
+
+function restartTest() {
+  state.current = 0;
+  state.answers = Array(TOTAL).fill(null);
+  state.status = Array(TOTAL).fill(STATUS.NOT_VISITED);
+  state.timerSec = 3 * 60 * 60;
+  state.submitted = false;
+
+  document.getElementById('mainLayout').style.display = 'flex';
+  document.getElementById('actionBar').style.display = 'flex';
+  document.querySelector('.mobile-palette-toggle').style.display = 'block';
+  document.getElementById('resultScreen').classList.remove('show');
+  document.getElementById('timer').className = 'timer-box';
+
+  renderQuestion();
+  startTimer();
+}
+
+// ══════════════════════════════════════════
+// MOBILE SIDEBAR TOGGLE
+// ══════════════════════════════════════════
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+}
+
+// ══════════════════════════════════════════
+// KEYBOARD NAVIGATION
+// ══════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (state.submitted) return;
+  if (e.key === 'ArrowRight') saveAndNext();
+  if (e.key === 'ArrowLeft') navigate(-1);
+  if (['1','2','3','4'].includes(e.key)) selectOption(parseInt(e.key) - 1);
+});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+renderQuestion();
+startTimer();
+</script>
+</body>
+</html>
