@@ -648,8 +648,9 @@
     <div class="candidate-info">
       <div><strong>Candidate:</strong> Demo Student</div>
       <div><strong>Roll No:</strong> 240000001</div>
+      <div><strong>Timing:</strong> 1 minute per question</div>
     </div>
-    <div class="timer-box" id="timer">03:00:00</div>
+    <div class="timer-box" id="timer">00:00</div>
   </div>
 </header>
 
@@ -1077,7 +1078,7 @@ let state = {
   current: 0,
   answers: Array(TOTAL).fill(null),
   status: Array(TOTAL).fill(STATUS.NOT_VISITED),
-  timerSec: 3 * 60 * 60,
+  timerSec: TOTAL * 60,
   timerInterval: null,
   submitted: false
 };
@@ -1085,14 +1086,23 @@ let state = {
 // ══════════════════════════════════════════
 // TIMER
 // ══════════════════════════════════════════
+function formatTime(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  if (h > 0) {
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function startTimer() {
+  document.getElementById('timer').textContent = formatTime(state.timerSec);
   state.timerInterval = setInterval(() => {
     state.timerSec--;
-    const h = String(Math.floor(state.timerSec / 3600)).padStart(2, '0');
-    const m = String(Math.floor((state.timerSec % 3600) / 60)).padStart(2, '0');
-    const s = String(state.timerSec % 60).padStart(2, '0');
     const el = document.getElementById('timer');
-    el.textContent = `${h}:${m}:${s}`;
+    el.textContent = formatTime(Math.max(0, state.timerSec));
     if (state.timerSec <= 300) el.className = 'timer-box warning';
     if (state.timerSec <= 60) el.className = 'timer-box danger';
     if (state.timerSec <= 0) { clearInterval(state.timerInterval); submitTest(); }
@@ -1281,7 +1291,7 @@ function restartTest() {
   state.current = 0;
   state.answers = Array(TOTAL).fill(null);
   state.status = Array(TOTAL).fill(STATUS.NOT_VISITED);
-  state.timerSec = 3 * 60 * 60;
+  state.timerSec = TOTAL * 60;
   state.submitted = false;
 
   document.getElementById('mainLayout').style.display = 'flex';
@@ -1289,6 +1299,7 @@ function restartTest() {
   document.querySelector('.mobile-palette-toggle').style.display = 'block';
   document.getElementById('resultScreen').classList.remove('show');
   document.getElementById('timer').className = 'timer-box';
+  document.getElementById('timer').textContent = formatTime(state.timerSec);
 
   renderQuestion();
   startTimer();

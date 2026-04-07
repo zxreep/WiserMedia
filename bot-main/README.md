@@ -5,7 +5,7 @@ Production-ready Telegram bot service for CUET Prep that connects directly to `a
 ## Features
 - `/start` onboarding and Telegram auth via `POST /auth/telegram`
 - Inline main menu callbacks (no text matching)
-- Quiz flow: list -> start -> answer -> submit -> score/XP
+- Quiz flow: list -> launch dynamic web quiz hosted by the same bot service (`/quiz`)
 - Leaderboard view
 - Mentorship request flow
 - Premium locked feature prompt
@@ -79,6 +79,7 @@ Create a Render Web Service pointing to `bot-main/`.
 
 ### 5) Telegram webhook route
 - `POST /telegram/webhook`
+- `GET /quiz` (serves `nta-mock-test.html` from this repository)
 
 ## Bot flow with api-core
 1. User sends `/start`.
@@ -90,10 +91,11 @@ Create a Render Web Service pointing to `bot-main/`.
 ### Quiz flow
 1. Callback `start_quiz` -> `GET /quizzes`.
 2. If empty: show “No quizzes” + refresh/leaderboard buttons.
-3. Quiz select callback `open_quiz_{id}` -> `POST /quizzes/:id/start`.
-4. Save `attempt_id`, `questions`, `current_question_index`, `answers`.
-5. For each answer callback `answer_{questionId}_{optionIndex}`: save locally and continue.
-6. On last answer -> `POST /quizzes/:id/submit` and show result.
+3. For each quiz, bot sends a URL button to `{PUBLIC_BASE_URL}/quiz` with query params:
+   - `quizId`
+   - `userId`
+   - `telegramId`
+4. User takes quiz on the web app instead of answering questions in chat.
 
 ### Leaderboard flow
 - Callback `show_leaderboard` -> `GET /leaderboard/global`
