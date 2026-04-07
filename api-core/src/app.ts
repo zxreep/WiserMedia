@@ -4,6 +4,7 @@ import { quizRoutes } from './routes/quizRoutes.js';
 import { leaderboardRoutes } from './routes/leaderboardRoutes.js';
 import { mentorshipRoutes } from './routes/mentorshipRoutes.js';
 import { premiumRoutes } from './routes/premiumRoutes.js';
+import { webAppRoutes } from './routes/webAppRoutes.js';
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -12,6 +13,7 @@ export function buildApp() {
 
   app.register(authRoutes, { prefix: '/auth' });
   app.register(quizRoutes, { prefix: '/quizzes' });
+  app.register(webAppRoutes, { prefix: '/webapp' });
   app.register(leaderboardRoutes, { prefix: '/leaderboard' });
   app.register(mentorshipRoutes, { prefix: '/mentorship' });
   app.register(premiumRoutes, { prefix: '/premium' });
