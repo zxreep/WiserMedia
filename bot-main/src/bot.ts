@@ -79,6 +79,15 @@ async function bootstrap() {
     const merged = html.replace('<script src="https://telegram.org/js/telegram-web-app.js"></script>', `${injected}\n<script src="https://telegram.org/js/telegram-web-app.js"></script>`);
     return reply.type('text/html; charset=utf-8').send(merged);
   });
+  server.post('/quiz/submit', async (request, reply) => {
+    const response = await fetch(`${config.apiBaseUrl}/webapp/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request.body ?? {})
+    });
+    const payload = await response.json();
+    return reply.code(response.status).send(payload);
+  });
 
   server.get('/health', async () => ({ success: true, data: { status: 'ok' } }));
 

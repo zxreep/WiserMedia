@@ -581,6 +581,16 @@
   .result-stat.green .val { color: var(--answered); }
   .result-stat.red .val { color: var(--not-answered); }
   .result-stat.blue .val { color: var(--accent); }
+  .wrong-review {
+    margin-top: 14px;
+    text-align: left;
+    max-height: 220px;
+    overflow: auto;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .wrong-review h4 { font-size: 0.9rem; margin-bottom: 8px; color: var(--not-answered); }
+  .wrong-item { background: #fff7f5; border: 1px solid #f1d1c7; border-radius: 8px; padding: 8px; margin-bottom: 8px; font-size: 0.82rem; }
 
   /* ─── RESPONSIVE ─── */
   @media (max-width: 768px) {
@@ -730,6 +740,7 @@
       <div class="score-ring-inner" id="scoreDisplay">0</div>
     </div>
     <div class="result-stats" id="resultStats"></div>
+    <div class="wrong-review" id="wrongReview" style="display:none;"></div>
     <button class="btn btn-primary" style="width:100%" onclick="restartTest()">🔄 Restart Test</button>
   </div>
 </div>
@@ -975,7 +986,6 @@ async function submitTest() {
   document.getElementById('scoreRing').style.setProperty('--pct', `${pct}%`);
 
   const tg = window.Telegram?.WebApp;
-  const apiBase = window.quizApiBase || new URLSearchParams(window.location.search).get('api_base');
   const payload = {
     attempt_id: quizMeta.attemptId,
     answers: state.answers
@@ -983,9 +993,9 @@ async function submitTest() {
       .filter(Boolean)
   };
 
-  if (apiBase && quizMeta.attemptId) {
+  if (quizMeta.attemptId) {
     try {
-      const response = await fetch(`${apiBase}/webapp/submit`, {
+      const response = await fetch('/quiz/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -997,6 +1007,23 @@ async function submitTest() {
         document.getElementById('scoreDisplay').textContent = submitted.data.score;
         document.getElementById('scoreRing').style.setProperty('--pct', `${Math.max(0, Math.round(submitted.data.score))}%`);
         payload.result = submitted.data;
+        const wrongReview = document.getElementById('wrongReview');
+        if (Array.isArray(submitted.data.wrong_questions) && submitted.data.wrong_questions.length) {
+          wrongReview.style.display = 'block';
+          wrongReview.innerHTML = `
+            <h4>❌ Wrongly Attempted Questions</h4>
+            ${submitted.data.wrong_questions.map((w, idx) => `
+              <div class="wrong-item">
+                <strong>${idx + 1}. ${w.question}</strong><br>
+                Your answer: <strong>${w.selected_text}</strong><br>
+                Correct answer: <strong>${w.correct_text}</strong>
+              </div>
+            `).join('')}
+          `;
+        } else {
+          wrongReview.style.display = 'none';
+          wrongReview.innerHTML = '';
+        }
       }
     } catch (_error) {
       // fallback to basic attempted stats only
@@ -1027,6 +1054,8 @@ function restartTest() {
   document.getElementById('resultScreen').classList.remove('show');
   document.getElementById('timer').className = 'timer-box';
   document.getElementById('timer').textContent = formatTime(state.timerSec);
+  document.getElementById('wrongReview').style.display = 'none';
+  document.getElementById('wrongReview').innerHTML = '';
 
   renderQuestion();
   startTimer();

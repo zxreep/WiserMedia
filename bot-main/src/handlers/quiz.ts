@@ -88,13 +88,24 @@ export function registerQuizHandlers(bot: Bot) {
       const parsed = JSON.parse(raw) as {
         attempt_id?: number;
         answers?: Array<{ question_id: number; selected_option: number }>;
-        result?: { score: number; correct: number; total: number; xp_earned: number };
+        result?: {
+          score: number;
+          correct: number;
+          total: number;
+          xp_earned: number;
+          wrong_questions?: Array<{ question: string; selected_text: string; correct_text: string }>;
+        };
       };
 
       if (parsed.result) {
         const result = parsed.result;
+        const wrongLines = (result.wrong_questions ?? [])
+          .map((w, idx) => `${idx + 1}. ${w.question}\n   Your: ${w.selected_text}\n   Correct: ${w.correct_text}`)
+          .join('\n\n');
         await ctx.reply(
-          `✅ Quiz Submitted!\n\nScore: ${result.score}\nCorrect: ${result.correct}/${result.total}\nXP Earned: +${result.xp_earned}`
+          `✅ Quiz Submitted!\n\nScore: ${result.score}\nCorrect: ${result.correct}/${result.total}\nXP Earned: +${result.xp_earned}${
+            wrongLines ? `\n\n❌ Wrongly attempted:\n${wrongLines}` : ''
+          }`
         );
         return;
       }
@@ -108,9 +119,14 @@ export function registerQuizHandlers(bot: Bot) {
         attempt_id: parsed.attempt_id,
         answers: parsed.answers
       });
+      const wrongLines = (result.wrong_questions ?? [])
+        .map((w, idx) => `${idx + 1}. ${w.question}\n   Your: ${w.selected_text}\n   Correct: ${w.correct_text}`)
+        .join('\n\n');
 
       await ctx.reply(
-        `✅ Quiz Submitted!\n\nScore: ${result.score}\nCorrect: ${result.correct}/${result.total}\nXP Earned: +${result.xp_earned}`
+        `✅ Quiz Submitted!\n\nScore: ${result.score}\nCorrect: ${result.correct}/${result.total}\nXP Earned: +${result.xp_earned}${
+          wrongLines ? `\n\n❌ Wrongly attempted:\n${wrongLines}` : ''
+        }`
       );
     } catch {
       await ctx.reply('⚠️ Something went wrong while submitting your quiz.');

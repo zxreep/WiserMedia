@@ -41,6 +41,14 @@ export type QuizSubmitResult = {
   correct: number;
   total: number;
   xp_earned: number;
+  wrong_questions?: Array<{
+    question_id: number;
+    question: string;
+    selected_option: number;
+    correct_option: number;
+    selected_text: string;
+    correct_text: string;
+  }>;
 };
 
 export type LeaderboardData = {

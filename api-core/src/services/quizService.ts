@@ -97,13 +97,23 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
     const questions = await client.query<{
       id: number;
       correct_option_index: number;
+      question_text: string;
+      options: string;
     }>(
-      'SELECT id, correct_option_index FROM quiz_questions WHERE quiz_id = $1',
+      'SELECT id, correct_option_index, question_text, options::text FROM quiz_questions WHERE quiz_id = $1',
       [quizId]
     );
 
     const byId = new Map(questions.rows.map((q) => [q.id, q]));
     let correct = 0;
+    const wrongQuestions: Array<{
+      question_id: number;
+      question: string;
+      selected_option: number;
+      correct_option: number;
+      selected_text: string;
+      correct_text: string;
+    }> = [];
 
     for (const answer of answers) {
       const question = byId.get(answer.question_id);
@@ -114,6 +124,16 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
       const isCorrect = answer.selected_option === question.correct_option_index;
       if (isCorrect) {
         correct += 1;
+      } else {
+        const options = JSON.parse(question.options) as string[];
+        wrongQuestions.push({
+          question_id: question.id,
+          question: question.question_text,
+          selected_option: answer.selected_option,
+          correct_option: question.correct_option_index,
+          selected_text: options[answer.selected_option] ?? '',
+          correct_text: options[question.correct_option_index] ?? ''
+        });
       }
 
       await client.query(
@@ -148,7 +168,8 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
       score,
       correct,
       total,
-      xp_earned: xpEarned
+      xp_earned: xpEarned,
+      wrong_questions: wrongQuestions
     };
   });
 }
