@@ -41,6 +41,14 @@ export type QuizSubmitResult = {
   correct: number;
   total: number;
   xp_earned: number;
+  wrong_questions?: Array<{
+    question_id: number;
+    question: string;
+    selected_option: number;
+    correct_option: number;
+    selected_text: string;
+    correct_text: string;
+  }>;
 };
 
 export type LeaderboardData = {
@@ -83,6 +91,11 @@ export async function startQuiz(quizId: number, userId: number): Promise<QuizSta
 
 export async function submitQuiz(quizId: number, input: QuizSubmitInput): Promise<QuizSubmitResult> {
   const response = await api.post<ApiEnvelope<QuizSubmitResult>>(`/quizzes/${quizId}/submit`, input);
+  return unwrap(response.data);
+}
+
+export async function submitWebAppQuiz(input: QuizSubmitInput): Promise<QuizSubmitResult> {
+  const response = await api.post<ApiEnvelope<QuizSubmitResult>>('/webapp/submit', input);
   return unwrap(response.data);
 }
 
