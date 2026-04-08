@@ -88,7 +88,16 @@ export function registerQuizHandlers(bot: Bot) {
       const parsed = JSON.parse(raw) as {
         attempt_id?: number;
         answers?: Array<{ question_id: number; selected_option: number }>;
+        result?: { score: number; correct: number; total: number; xp_earned: number };
       };
+
+      if (parsed.result) {
+        const result = parsed.result;
+        await ctx.reply(
+          `✅ Quiz Submitted!\n\nScore: ${result.score}\nCorrect: ${result.correct}/${result.total}\nXP Earned: +${result.xp_earned}`
+        );
+        return;
+      }
 
       if (!parsed.attempt_id || !Array.isArray(parsed.answers)) {
         await ctx.reply('⚠️ Invalid quiz submission payload.');

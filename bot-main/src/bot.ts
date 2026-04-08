@@ -75,7 +75,7 @@ async function bootstrap() {
 
     const res = await fetch(`${config.apiBaseUrl}/webapp/quiz/${attemptId}`);
     const payload = await res.json();
-    const injected = `<script>window.quizData=${JSON.stringify(payload?.data ?? null)};</script>`;
+    const injected = `<script>window.quizData=${JSON.stringify(payload?.data ?? null)};window.quizApiBase=${JSON.stringify(config.apiBaseUrl)};</script>`;
     const merged = html.replace('<script src="https://telegram.org/js/telegram-web-app.js"></script>', `${injected}\n<script src="https://telegram.org/js/telegram-web-app.js"></script>`);
     return reply.type('text/html; charset=utf-8').send(merged);
   });
