@@ -86,6 +86,11 @@ export async function submitQuiz(quizId: number, input: QuizSubmitInput): Promis
   return unwrap(response.data);
 }
 
+export async function submitWebAppQuiz(input: QuizSubmitInput): Promise<QuizSubmitResult> {
+  const response = await api.post<ApiEnvelope<QuizSubmitResult>>('/webapp/submit', input);
+  return unwrap(response.data);
+}
+
 export async function getLeaderboard(): Promise<LeaderboardData> {
   const response = await api.get<ApiEnvelope<LeaderboardData>>('/leaderboard/global');
   return unwrap(response.data);

@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { listPublishedQuizzes, startQuiz, submitQuiz } from '../services/quizService.js';
+import { getWebAppQuiz, listPublishedQuizzes, startQuiz, submitQuiz, submitWebAppQuiz } from '../services/quizService.js';
 
 type StartBody = { user_id?: number };
 type SubmitBody = {
@@ -40,5 +40,32 @@ export async function submitQuizController(
   }
 
   const data = await submitQuiz(quizId, attemptId, answers);
+  return reply.send({ success: true, data });
+}
+
+export async function webAppQuizController(
+  request: FastifyRequest<{ Params: { attempt_id?: string } }>,
+  reply: FastifyReply
+) {
+  const attemptId = Number(request.params.attempt_id);
+  if (!Number.isInteger(attemptId)) {
+    return reply.code(400).send({ success: false, error: 'invalid attempt' });
+  }
+
+  const data = await getWebAppQuiz(attemptId);
+  return reply.send({ success: true, data });
+}
+
+export async function webAppSubmitController(
+  request: FastifyRequest<{ Body: SubmitBody }>,
+  reply: FastifyReply
+) {
+  const attemptId = request.body.attempt_id;
+  const answers = request.body.answers;
+  if (!attemptId || !Array.isArray(answers)) {
+    return reply.code(400).send({ success: false, error: 'invalid submit payload' });
+  }
+
+  const data = await submitWebAppQuiz(attemptId, answers);
   return reply.send({ success: true, data });
 }
