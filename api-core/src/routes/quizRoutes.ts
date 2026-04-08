@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { listQuizzesController, startQuizController, submitQuizController } from '../controllers/quizController.js';
+import {
+  listQuizzesController,
+  startQuizController,
+  submitQuizController
+} from '../controllers/quizController.js';
 
 export async function quizRoutes(app: FastifyInstance) {
   app.get('/', listQuizzesController);

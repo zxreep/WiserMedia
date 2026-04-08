@@ -648,8 +648,9 @@
     <div class="candidate-info">
       <div><strong>Candidate:</strong> Demo Student</div>
       <div><strong>Roll No:</strong> 240000001</div>
+      <div><strong>Timing:</strong> 1 minute per question</div>
     </div>
-    <div class="timer-box" id="timer">03:00:00</div>
+    <div class="timer-box" id="timer">00:00</div>
   </div>
 </header>
 
@@ -745,354 +746,61 @@
   </div>
 </div>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 // ══════════════════════════════════════════
 // QUESTION BANK (50 CUET-style Math questions)
 // ══════════════════════════════════════════
-const questions = [
-  // ── Passage 1: Missile Motion (Q1–3)
-  {
-    id: 1, passage: `<div class="passage-box"><div class="passage-title">Passage (Questions 1 to 3)</div>The equation of motion of a missile is x = 3t, y = −4t, z = t, where time 't' is in seconds and distance is in kilometres.</div>`,
-    text: "The path of the missile represents which geometric curve?",
-    options: ["A straight line", "A parabola", "A circle", "An ellipse"],
-    answer: 0
-  },
-  {
-    id: 2, passage: null,
-    text: "The direction ratios of the path of the missile are:",
-    options: ["3, –4, 1", "3, 4, 1", "–3, 4, –1", "1, –4, 3"],
-    answer: 0
-  },
-  {
-    id: 3, passage: null,
-    text: "At a certain instant, if the missile is above sea level where 2x + y + 3z = 1, and the missile's position is (1, 1, 2), the image of the position of the rocket in the sea is:",
-    options: ["(−9/7, −1/7, −10/7)", "(9/7, −1/7, −10/7)", "(−9/7, 1/7, −10/7)", "(−9/7, −1/7, 10/7)"],
-    answer: 0
-  },
-  // ── Matrices / Determinants
-  {
-    id: 4, passage: null,
-    text: "If A is a square matrix of order 3 with |A| = 4, then |2A| equals:",
-    options: ["8", "16", "32", "64"],
-    answer: 2
-  },
-  {
-    id: 5, passage: null,
-    text: "For a 3×3 matrix A, if A · adj(A) = kI, then k equals:",
-    options: ["|A|", "|A|²", "|A|³", "0"],
-    answer: 0
-  },
-  {
-    id: 6, passage: null,
-    text: "The number of all possible matrices of order 2×2 with each entry 0 or 1 is:",
-    options: ["16", "4", "8", "12"],
-    answer: 0
-  },
-  {
-    id: 7, passage: null,
-    text: "If A = [[2, 3], [1, 4]] and B = [[1, –2], [–1, 3]], then AB is:",
-    options: ["[[−1, 5], [−3, 10]]", "[[−1, 5], [3, 10]]", "[[5, −1], [10, 3]]", "[[−1, −5], [3, 10]]"],
-    answer: 1
-  },
-  {
-    id: 8, passage: null,
-    text: "The value of the determinant |[1, 2, 3], [4, 5, 6], [7, 8, 9]| is:",
-    options: ["0", "1", "–1", "45"],
-    answer: 0
-  },
-  // ── Calculus – Differentiation
-  {
-    id: 9, passage: null,
-    text: "If y = sin⁻¹(2x√(1−x²)), then dy/dx is:",
-    options: ["2/√(1−x²)", "1/√(1−x²)", "–2/√(1−x²)", "2x/√(1−x²)"],
-    answer: 0
-  },
-  {
-    id: 10, passage: null,
-    text: "The derivative of log(sin x) with respect to x is:",
-    options: ["cot x", "tan x", "–cot x", "–tan x"],
-    answer: 0
-  },
-  {
-    id: 11, passage: null,
-    text: "If f(x) = x², then f'(x) at x = 3 is:",
-    options: ["6", "9", "3", "12"],
-    answer: 0
-  },
-  {
-    id: 12, passage: null,
-    text: "For the function f(x) = eˣ, which of the following is true?",
-    options: ["f'(x) = f(x)", "f'(x) = 1/f(x)", "f'(x) = –f(x)", "f'(x) = f(x)²"],
-    answer: 0
-  },
-  {
-    id: 13, passage: null,
-    text: "The function f(x) = |x| is not differentiable at:",
-    options: ["x = 0", "x = 1", "x = –1", "x = 2"],
-    answer: 0
-  },
-  // ── Integration
-  {
-    id: 14, passage: null,
-    text: "∫ (1/x) dx equals:",
-    options: ["log|x| + C", "x⁻² + C", "–1/x² + C", "1/x² + C"],
-    answer: 0
-  },
-  {
-    id: 15, passage: null,
-    text: "∫₀¹ x² dx equals:",
-    options: ["1/3", "1/2", "1", "2/3"],
-    answer: 0
-  },
-  {
-    id: 16, passage: null,
-    text: "∫ eˣ(1 + x) dx equals:",
-    options: ["xeˣ + C", "eˣ + C", "eˣ(x−1) + C", "eˣx + C"],
-    answer: 0
-  },
-  {
-    id: 17, passage: null,
-    text: "The value of ∫₀^(π/2) sin x dx is:",
-    options: ["1", "0", "2", "π/2"],
-    answer: 0
-  },
-  {
-    id: 18, passage: null,
-    text: "∫ sec²x dx equals:",
-    options: ["tan x + C", "cot x + C", "sec x tan x + C", "cosec x + C"],
-    answer: 0
-  },
-  // ── 3D Geometry
-  {
-    id: 19, passage: null,
-    text: "The distance between points (1, 2, 3) and (4, 6, 3) is:",
-    options: ["5", "√41", "√50", "7"],
-    answer: 0
-  },
-  {
-    id: 20, passage: null,
-    text: "Direction cosines of the x-axis are:",
-    options: ["(1, 0, 0)", "(0, 1, 0)", "(0, 0, 1)", "(1, 1, 0)"],
-    answer: 0
-  },
-  {
-    id: 21, passage: null,
-    text: "The equation of a plane passing through origin with normal (1, 2, 3) is:",
-    options: ["x + 2y + 3z = 0", "x + 2y + 3z = 1", "2x + y + 3z = 0", "x – 2y + 3z = 0"],
-    answer: 0
-  },
-  // ── Vectors
-  {
-    id: 22, passage: null,
-    text: "If |a⃗| = 3 and |b⃗| = 4 and a⃗ · b⃗ = 0, then |a⃗ + b⃗| equals:",
-    options: ["5", "7", "12", "1"],
-    answer: 0
-  },
-  {
-    id: 23, passage: null,
-    text: "The unit vector along i⃗ + j⃗ is:",
-    options: ["(i⃗ + j⃗)/√2", "(i⃗ + j⃗)/2", "(i⃗ – j⃗)/√2", "i⃗ + j⃗"],
-    answer: 0
-  },
-  {
-    id: 24, passage: null,
-    text: "If a⃗ = 2i⃗ + 3j⃗ – k⃗ and b⃗ = i⃗ – 2j⃗ + k⃗, then a⃗ · b⃗ equals:",
-    options: ["–3", "3", "7", "–7"],
-    answer: 0
-  },
-  // ── Linear Programming
-  {
-    id: 25, passage: null,
-    text: "The feasible region of an LPP is always:",
-    options: ["A convex set", "A concave set", "A circle", "An unbounded set"],
-    answer: 0
-  },
-  {
-    id: 26, passage: null,
-    text: "Maximise Z = 3x + 5y, subject to x ≤ 4, y ≤ 6, x + y ≤ 8, x,y ≥ 0. The maximum value is:",
-    options: ["34", "30", "36", "32"],
-    answer: 0
-  },
-  // ── Probability
-  {
-    id: 27, passage: null,
-    text: "If P(A) = 0.3, P(B) = 0.4, P(A∩B) = 0.12, find P(A|B):",
-    options: ["0.3", "0.4", "0.5", "0.12"],
-    answer: 0
-  },
-  {
-    id: 28, passage: null,
-    text: "Two cards are drawn without replacement from a pack of 52. The probability both are kings is:",
-    options: ["1/221", "4/52", "1/52", "1/169"],
-    answer: 0
-  },
-  {
-    id: 29, passage: null,
-    text: "In a binomial distribution B(n, p), the mean is 6 and variance is 2. The value of p is:",
-    options: ["2/3", "1/3", "1/2", "3/4"],
-    answer: 1
-  },
-  {
-    id: 30, passage: null,
-    text: "Bayes' Theorem is used to find:",
-    options: ["Posterior probability", "Prior probability", "Marginal probability", "Conditional probability only"],
-    answer: 0
-  },
-  // ── Relations & Functions
-  {
-    id: 31, passage: null,
-    text: "A relation R on set A is called symmetric if:",
-    options: ["(a, b) ∈ R ⇒ (b, a) ∈ R", "(a, a) ∈ R for all a", "(a, b) ∈ R and (b, c) ∈ R ⇒ (a, c) ∈ R", "(a, b) ∈ R ⇒ a = b"],
-    answer: 0
-  },
-  {
-    id: 32, passage: null,
-    text: "f: R → R defined by f(x) = 2x is:",
-    options: ["Bijective", "Only injective", "Only surjective", "Neither injective nor surjective"],
-    answer: 0
-  },
-  // ── Inverse Trigonometry
-  {
-    id: 33, passage: null,
-    text: "The principal value of sin⁻¹(1/2) is:",
-    options: ["π/6", "π/3", "π/4", "5π/6"],
-    answer: 0
-  },
-  {
-    id: 34, passage: null,
-    text: "tan⁻¹(1) + tan⁻¹(–1) equals:",
-    options: ["0", "π/4", "π/2", "π"],
-    answer: 0
-  },
-  {
-    id: 35, passage: null,
-    text: "The range of cos⁻¹x is:",
-    options: ["[0, π]", "[–π/2, π/2]", "(0, π)", "(–π, π)"],
-    answer: 0
-  },
-  // ── Application of Derivatives
-  {
-    id: 36, passage: null,
-    text: "The function f(x) = x³ – 3x² + 4 is increasing on:",
-    options: ["(–∞, 0) ∪ (2, ∞)", "(0, 2)", "(–1, 2)", "(–∞, ∞)"],
-    answer: 0
-  },
-  {
-    id: 37, passage: null,
-    text: "The maximum value of f(x) = sin x + cos x is:",
-    options: ["√2", "2", "1", "√3"],
-    answer: 0
-  },
-  {
-    id: 38, passage: null,
-    text: "If the radius of a circle is increasing at 0.7 cm/s, the rate of increase of circumference is:",
-    options: ["1.4π cm/s", "0.7π cm/s", "2.8π cm/s", "0.35π cm/s"],
-    answer: 0
-  },
-  // ── Differential Equations
-  {
-    id: 39, passage: null,
-    text: "The order of the differential equation d²y/dx² + (dy/dx)³ + 6y = 0 is:",
-    options: ["2", "3", "1", "6"],
-    answer: 0
-  },
-  {
-    id: 40, passage: null,
-    text: "The general solution of dy/dx = eˣ is:",
-    options: ["y = eˣ + C", "y = eˣ", "y = –eˣ + C", "y = e⁻ˣ + C"],
-    answer: 0
-  },
-  // ── Passage 2: Area Under Curve (Q41–45)
-  {
-    id: 41, passage: `<div class="passage-box"><div class="passage-title">Passage (Questions 41 to 45)</div>Consider the region bounded by the parabola y = x² and the line y = x in the first quadrant.</div>`,
-    text: "The parabola y = x² and line y = x intersect at x =",
-    options: ["0 and 1", "0 and –1", "1 and 2", "–1 and 1"],
-    answer: 0
-  },
-  {
-    id: 42, passage: null,
-    text: "The area between y = x and y = x² from x = 0 to x = 1 is:",
-    options: ["1/6", "1/3", "1/2", "2/3"],
-    answer: 0
-  },
-  {
-    id: 43, passage: null,
-    text: "The area bounded by y = x², x-axis, and x = 3 is:",
-    options: ["9", "27/3 = 9", "6", "27"],
-    answer: 0
-  },
-  {
-    id: 44, passage: null,
-    text: "Using integration, the area of a circle x² + y² = a² is:",
-    options: ["πa²", "2πa²", "πa²/2", "4πa"],
-    answer: 0
-  },
-  {
-    id: 45, passage: null,
-    text: "The area enclosed by the ellipse x²/a² + y²/b² = 1 is:",
-    options: ["πab", "πa²b", "2πab", "πab²"],
-    answer: 0
-  },
-  // ── Continuity & Limits
-  {
-    id: 46, passage: null,
-    text: "lim(x→0) (sin x / x) equals:",
-    options: ["1", "0", "∞", "–1"],
-    answer: 0
-  },
-  {
-    id: 47, passage: null,
-    text: "f(x) = x² is continuous at x = 2. The value of f(2) is:",
-    options: ["4", "2", "0", "8"],
-    answer: 0
-  },
-  {
-    id: 48, passage: null,
-    text: "A function f is said to be continuous at x = a if:",
-    options: ["lim(x→a) f(x) = f(a)", "f(a) exists only", "lim f(x) exists only", "f'(a) = 0"],
-    answer: 0
-  },
-  {
-    id: 49, passage: null,
-    text: "The value of lim(x→2) (x² – 4)/(x – 2) is:",
-    options: ["4", "2", "0", "∞"],
-    answer: 0
-  },
-  {
-    id: 50, passage: null,
-    text: "The derivative of xⁿ with respect to x is:",
-    options: ["nxⁿ⁻¹", "nxⁿ", "(n–1)xⁿ⁻¹", "xⁿ/n"],
-    answer: 0
-  }
-];
+const defaultQuestions = []
+
+let questions = [];
+let quizMeta = {
+  attemptId: null,
+  title: 'CUET (UG) – 2024 : Mathematics',
+  duration: defaultQuestions.length * 60
+};
 
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
-const TOTAL = questions.length;
+let TOTAL = questions.length;
 const STATUS = { NOT_VISITED: 0, NOT_ANSWERED: 1, ANSWERED: 2, MARKED: 3, ANSWERED_MARKED: 4 };
 const statusClass = ['not-visited', 'not-answered', 'answered', 'marked', 'answered-marked'];
 
-let state = {
-  current: 0,
-  answers: Array(TOTAL).fill(null),
-  status: Array(TOTAL).fill(STATUS.NOT_VISITED),
-  timerSec: 3 * 60 * 60,
-  timerInterval: null,
-  submitted: false
-};
+let state = {};
+
+function initState() {
+  TOTAL = questions.length;
+  state = {
+    current: 0,
+    answers: Array(TOTAL).fill(null),
+    status: Array(TOTAL).fill(STATUS.NOT_VISITED),
+    timerSec: quizMeta.duration || TOTAL * 60,
+    timerInterval: null,
+    submitted: false
+  };
+}
 
 // ══════════════════════════════════════════
 // TIMER
 // ══════════════════════════════════════════
+function formatTime(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  if (h > 0) {
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function startTimer() {
+  document.getElementById('timer').textContent = formatTime(state.timerSec);
   state.timerInterval = setInterval(() => {
     state.timerSec--;
-    const h = String(Math.floor(state.timerSec / 3600)).padStart(2, '0');
-    const m = String(Math.floor((state.timerSec % 3600) / 60)).padStart(2, '0');
-    const s = String(state.timerSec % 60).padStart(2, '0');
     const el = document.getElementById('timer');
-    el.textContent = `${h}:${m}:${s}`;
+    el.textContent = formatTime(Math.max(0, state.timerSec));
     if (state.timerSec <= 300) el.className = 'timer-box warning';
     if (state.timerSec <= 60) el.className = 'timer-box danger';
     if (state.timerSec <= 0) { clearInterval(state.timerInterval); submitTest(); }
@@ -1105,6 +813,7 @@ function startTimer() {
 function renderQuestion() {
   const i = state.current;
   const q = questions[i];
+  if (!q) return;
 
   document.getElementById('qNumberDisplay').textContent = `Question No. ${q.id}`;
 
@@ -1122,8 +831,9 @@ function renderQuestion() {
 
   const list = document.getElementById('optionsList');
   list.innerHTML = '';
-  const labels = ['1)', '2)', '3)', '4)'];
-  q.options.forEach((opt, idx) => {
+  const labels = ['A)', 'B)', 'C)', 'D)'];
+  (q.options || []).forEach((opt, idx) => {
+    if (opt === undefined || opt === null) return;
     const div = document.createElement('div');
     div.className = 'option-item' + (state.answers[i] === idx ? ' selected' : '');
     div.innerHTML = `<div class="option-radio"></div><span class="option-label">${labels[idx]}</span><span class="option-text">${opt}</span>`;
@@ -1241,22 +951,16 @@ function closeModal() {
   document.getElementById('submitModal').classList.remove('show');
 }
 
-function submitTest() {
+async function submitTest() {
   clearInterval(state.timerInterval);
   closeModal();
   state.submitted = true;
 
-  // Calculate score
-  let correct = 0, wrong = 0, skipped = 0;
-  questions.forEach((q, i) => {
-    if (state.answers[i] === null) skipped++;
-    else if (state.answers[i] === q.answer) correct++;
-    else wrong++;
-  });
-
-  const score = correct * 5 - wrong * 1;
-  const maxScore = TOTAL * 5;
-  const pct = Math.max(0, Math.round((score / maxScore) * 100));
+  let correct = 0, wrong = 0;
+  const answeredCount = state.answers.filter((a) => a !== null).length;
+  const skipped = TOTAL - answeredCount;
+  const score = 0;
+  const pct = 0;
 
   // Hide test UI
   document.getElementById('mainLayout').style.display = 'none';
@@ -1270,18 +974,51 @@ function submitTest() {
   document.getElementById('scoreDisplay').textContent = score;
   document.getElementById('scoreRing').style.setProperty('--pct', `${pct}%`);
 
+  const tg = window.Telegram?.WebApp;
+  const apiBase = window.quizApiBase || new URLSearchParams(window.location.search).get('api_base');
+  const payload = {
+    attempt_id: quizMeta.attemptId,
+    answers: state.answers
+      .map((selected_option, i) => (selected_option === null ? null : { question_id: questions[i].id, selected_option }))
+      .filter(Boolean)
+  };
+
+  if (apiBase && quizMeta.attemptId) {
+    try {
+      const response = await fetch(`${apiBase}/webapp/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const submitted = await response.json();
+      if (submitted?.success && submitted?.data) {
+        correct = submitted.data.correct;
+        wrong = submitted.data.total - submitted.data.correct;
+        document.getElementById('scoreDisplay').textContent = submitted.data.score;
+        document.getElementById('scoreRing').style.setProperty('--pct', `${Math.max(0, Math.round(submitted.data.score))}%`);
+        payload.result = submitted.data;
+      }
+    } catch (_error) {
+      // fallback to basic attempted stats only
+    }
+  }
+
   document.getElementById('resultStats').innerHTML = `
     <div class="result-stat green"><span class="val">${correct}</span><span class="lbl">Correct</span></div>
     <div class="result-stat red"><span class="val">${wrong}</span><span class="lbl">Wrong</span></div>
     <div class="result-stat blue"><span class="val">${skipped}</span><span class="lbl">Skipped</span></div>
   `;
+
+  if (tg) {
+    tg.sendData(JSON.stringify(payload));
+  }
 }
 
 function restartTest() {
   state.current = 0;
   state.answers = Array(TOTAL).fill(null);
   state.status = Array(TOTAL).fill(STATUS.NOT_VISITED);
-  state.timerSec = 3 * 60 * 60;
+  state.timerSec = quizMeta.duration || TOTAL * 60;
   state.submitted = false;
 
   document.getElementById('mainLayout').style.display = 'flex';
@@ -1289,6 +1026,7 @@ function restartTest() {
   document.querySelector('.mobile-palette-toggle').style.display = 'block';
   document.getElementById('resultScreen').classList.remove('show');
   document.getElementById('timer').className = 'timer-box';
+  document.getElementById('timer').textContent = formatTime(state.timerSec);
 
   renderQuestion();
   startTimer();
@@ -1314,8 +1052,70 @@ document.addEventListener('keydown', (e) => {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-renderQuestion();
-startTimer();
+async function loadQuizData() {
+  const injected = window.quizData;
+  if (injected && Array.isArray(injected.questions) && injected.questions.length) {
+    questions = normalizeQuestions(injected.questions);
+    quizMeta = {
+      attemptId: injected.attempt_id,
+      title: injected.title ?? quizMeta.title,
+      duration: Number(injected.duration ?? (injected.questions.length * 60))
+    };
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const attemptId = params.get('attempt_id');
+  const apiBase = window.quizApiBase || params.get('api_base');
+
+  if (!attemptId || !apiBase) {
+    throw new Error('Missing attempt_id or api_base');
+  }
+
+  const response = await fetch(`${apiBase}/webapp/quiz/${encodeURIComponent(attemptId)}`);
+  const payload = await response.json();
+  if (payload?.success && payload?.data?.questions?.length) {
+    questions = normalizeQuestions(payload.data.questions);
+    quizMeta = {
+      attemptId: payload.data.attempt_id,
+      title: payload.data.title ?? quizMeta.title,
+      duration: Number(payload.data.duration ?? (payload.data.questions.length * 60))
+    };
+  } else {
+    throw new Error('Quiz data not found');
+  }
+}
+
+function normalizeQuestions(rawQuestions) {
+  return rawQuestions.map((q, index) => {
+    const optionsRaw = q.options;
+    let options = [];
+    if (Array.isArray(optionsRaw)) options = optionsRaw;
+    else if (optionsRaw && typeof optionsRaw === 'object') options = Object.values(optionsRaw);
+    return {
+      id: q.id ?? index + 1,
+      question: q.question ?? q.question_text ?? '',
+      options: options.map((x) => String(x))
+    };
+  });
+}
+
+async function init() {
+  try {
+    window.Telegram?.WebApp?.ready();
+    await loadQuizData();
+    initState();
+    document.querySelector('.exam-title').textContent = quizMeta.title;
+    document.querySelector('.result-sub').textContent = quizMeta.title;
+    renderQuestion();
+    startTimer();
+  } catch (error) {
+    document.getElementById('questionText').innerHTML = '⚠️ Failed to load quiz data. Please relaunch from Telegram.';
+    document.getElementById('optionsList').innerHTML = '';
+  }
+}
+
+init();
 </script>
 </body>
 </html>
