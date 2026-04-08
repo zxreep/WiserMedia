@@ -815,7 +815,7 @@ function renderQuestion() {
   const q = questions[i];
   if (!q) return;
 
-  document.getElementById('qNumberDisplay').textContent = `Question No. ${q.id}`;
+  document.getElementById('qNumberDisplay').textContent = `Question No. ${i + 1}`;
 
   // Passage
   const passageArea = document.getElementById('passageArea');
@@ -827,7 +827,7 @@ function renderQuestion() {
   }
 
   document.getElementById('questionText').innerHTML =
-    `<span class="q-sub">${q.id}.</span> ${q.text}`;
+    `<span class="q-sub">${i + 1}.</span> ${q.text}`;
 
   const list = document.getElementById('optionsList');
   list.innerHTML = '';
@@ -1094,7 +1094,7 @@ function normalizeQuestions(rawQuestions) {
     else if (optionsRaw && typeof optionsRaw === 'object') options = Object.values(optionsRaw);
     return {
       id: q.id ?? index + 1,
-      question: q.question ?? q.question_text ?? '',
+      text: q.text ?? q.question ?? q.question_text ?? '',
       options: options.map((x) => String(x))
     };
   });
