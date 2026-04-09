@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: wisermedia-pdf-quiz
+    env: node
+    plan: starter
+    rootDir: api-core
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1/chat/completions
+      - key: AI_MODEL
+        value: gpt-4o-mini
