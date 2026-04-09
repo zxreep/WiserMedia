@@ -4,7 +4,7 @@ Full-stack service that converts uploaded PDFs into CUET-focused notes + difficu
 
 ## What is included
 - Backend API with modular routes/controllers/services.
-- Frontend webpage served at `/` with NVIDIA model selection.
+- Frontend UI is provided via `src/public/pdf-quiz-generator.html` and served at `/pdf-quiz-generator.html` (root redirects there).
 - PDF text extraction (no OCR) + chunked sequential AI processing.
 - AI generation for key points + structured MCQs using NVIDIA API.
 - Generated quiz is stored in existing `quizzes` and `quiz_questions` tables so it appears in `Start Quiz` flows.
