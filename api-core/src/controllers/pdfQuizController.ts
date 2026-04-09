@@ -4,7 +4,7 @@ import { extractPdfText } from '../services/pdfService.js';
 import { processChunksSequentially } from '../services/quizGenerationService.js';
 import { getQuizQuestions, saveGeneratedQuiz, trackActivity } from '../db/pdfQuizRepo.js';
 import { sendQuizPolls } from '../services/telegramService.js';
-import type { GenerateQuizBody, ProcessUploadBody, SendTelegramBody } from '../types/pdfQuiz.js';
+import type { AddQuizBody, GenerateQuizBody, ProcessUploadBody, SendTelegramBody } from '../types/pdfQuiz.js';
 
 export async function uploadPdfController(request: FastifyRequest, reply: FastifyReply) {
   const file = await request.file();
@@ -97,10 +97,10 @@ export async function generateQuizController(request: FastifyRequest<{ Body: Gen
     });
   }
 
+  const quizTitle = `CUET quiz for ${session.fileName}`;
   const quizId = await saveGeneratedQuiz({
-    title: `CUET quiz for ${session.fileName}`,
-    sourceFileName: session.fileName,
-    keyPoints: generated.key_points,
+    title: quizTitle,
+    description: generated.key_points.slice(0, 5).join(' | '),
     questions: generated.questions
   });
 
@@ -125,6 +125,36 @@ export async function generateQuizController(request: FastifyRequest<{ Body: Gen
       telegramSent
     }
   });
+}
+
+export async function addQuizFromJsonController(request: FastifyRequest<{ Body: AddQuizBody }>, reply: FastifyReply) {
+  const { title, description, questions, key_points } = request.body;
+
+  if (!title || !Array.isArray(questions)) {
+    return reply.code(400).send({ success: false, error: 'invalid quiz payload' });
+  }
+
+  const normalizedQuestions = questions
+    .map((q) => ({
+      question: String(q.question_text ?? q.question ?? ''),
+      options: Array.isArray(q.options) ? q.options.map((o) => String(o)).slice(0, 4) : [],
+      correct_option_id: Number(q.correct_option_id),
+      explanation: String(q.explanation ?? '')
+    }))
+    .filter((q) => q.question && q.options.length === 4 && q.correct_option_id >= 0 && q.correct_option_id <= 3);
+
+  if (!normalizedQuestions.length) {
+    return reply.code(400).send({ success: false, error: 'invalid quiz payload' });
+  }
+
+  const quizId = await saveGeneratedQuiz({
+    title,
+    description: description ? String(description) : (key_points ?? []).slice(0, 5).join(' | '),
+    questions: normalizedQuestions
+  });
+
+  await trackActivity('quiz_added_via_json', { question_count: normalizedQuestions.length }, quizId);
+  return reply.send({ success: true, data: { quizId, questionCount: normalizedQuestions.length } });
 }
 
 export async function sendTelegramController(request: FastifyRequest<{ Body: SendTelegramBody }>, reply: FastifyReply) {

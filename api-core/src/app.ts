@@ -56,7 +56,8 @@ export function buildApp() {
       'missing telegram credentials',
       'upload not found',
       'quiz not found',
-      'no questions generated'
+      'no questions generated',
+      'invalid quiz payload'
     ]);
 
     if (exact400Errors.has(errorMessage)) {

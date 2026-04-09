@@ -7,7 +7,8 @@ Full-stack service that converts uploaded PDFs into CUET-focused notes + difficu
 - Frontend webpage served at `/` with NVIDIA model selection.
 - PDF text extraction (no OCR) + chunked sequential AI processing.
 - AI generation for key points + structured MCQs using NVIDIA API.
-- Neon persistence for generated quizzes and user activity (no PDF text stored).
+- Generated quiz is stored in existing `quizzes` and `quiz_questions` tables so it appears in `Start Quiz` flows.
+- JSON ingestion endpoint to add quizzes directly from structured payload.
 - Telegram Quiz Poll delivery with `correct_option_id` + explanation.
 - Render deployment config (`render.yaml`).
 
@@ -38,7 +39,26 @@ Open `http://localhost:3000`.
 - `POST /pdf-quiz/upload-pdf` (multipart upload)
 - `POST /pdf-quiz/process-pdf`
 - `POST /pdf-quiz/generate-quiz`
+- `POST /pdf-quiz/add-quiz-json`
 - `POST /pdf-quiz/send-telegram`
+
+### Add quiz via JSON payload
+`POST /pdf-quiz/add-quiz-json`
+
+```json
+{
+  "title": "CUET Practice: Thermodynamics",
+  "description": "Concept-heavy mixed difficulty",
+  "questions": [
+    {
+      "question_text": "...",
+      "options": ["A", "B", "C", "D"],
+      "correct_option_id": 2,
+      "explanation": "..."
+    }
+  ]
+}
+```
 
 ## Notes on security
 - API keys and Telegram credentials are entered by the user on the web UI.

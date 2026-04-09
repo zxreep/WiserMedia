@@ -34,6 +34,20 @@ export interface GenerateQuizBody {
   chatId?: string;
 }
 
+export interface AddQuizBody {
+  title: string;
+  description?: string;
+  key_points?: string[];
+  questions: Array<{
+    question_text?: string;
+    question?: string;
+    options: string[];
+    correct_option_id: number;
+    explanation: string;
+    question_order?: number;
+  }>;
+}
+
 export interface SendTelegramBody {
   quizId: number;
   botToken: string;
