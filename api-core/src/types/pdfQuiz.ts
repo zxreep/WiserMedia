@@ -28,6 +28,7 @@ export interface ProcessUploadBody {
 export interface GenerateQuizBody {
   uploadId: string;
   aiApiKey: string;
+  aiModel: string;
   outputMode: OutputMode;
   botToken?: string;
   chatId?: string;

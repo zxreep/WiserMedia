@@ -4,9 +4,9 @@ Full-stack service that converts uploaded PDFs into CUET-focused notes + difficu
 
 ## What is included
 - Backend API with modular routes/controllers/services.
-- Frontend webpage served at `/`.
+- Frontend webpage served at `/` with NVIDIA model selection.
 - PDF text extraction (no OCR) + chunked sequential AI processing.
-- AI generation for key points + structured MCQs.
+- AI generation for key points + structured MCQs using NVIDIA API.
 - Neon persistence for generated quizzes and user activity (no PDF text stored).
 - Telegram Quiz Poll delivery with `correct_option_id` + explanation.
 - Render deployment config (`render.yaml`).
@@ -18,8 +18,11 @@ Required:
 Optional:
 - `PORT` (default `3000`)
 - `NODE_ENV` (`development` or `production`)
-- `AI_BASE_URL` (base URL, e.g. `https://integrate.api.nvidia.com/v1` or `https://api.openai.com/v1`)
-- `AI_MODEL` (default `gpt-4o-mini`)
+
+## AI configuration
+- AI base URL is fixed in code to NVIDIA endpoint: `https://integrate.api.nvidia.com/v1/chat/completions`.
+- AI model is selected by the user from the web UI per request.
+- NVIDIA API key is provided by the user on the web UI per request.
 
 ## Local setup
 ```bash
@@ -49,4 +52,3 @@ Open `http://localhost:3000`.
   - Build: `npm install && npm run build`
   - Start: `npm run start`
 - Set `DATABASE_URL` in Render environment variables.
-- For AI provider changes, set `AI_BASE_URL` and `AI_MODEL`.

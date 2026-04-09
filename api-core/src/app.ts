@@ -52,6 +52,7 @@ export function buildApp() {
       'pdf too large',
       'pdf has no extractable text',
       'missing ai api key',
+      'missing ai model',
       'missing telegram credentials',
       'upload not found',
       'quiz not found',

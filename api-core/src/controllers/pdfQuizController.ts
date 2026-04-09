@@ -66,7 +66,7 @@ export async function processPdfController(request: FastifyRequest<{ Body: Proce
 }
 
 export async function generateQuizController(request: FastifyRequest<{ Body: GenerateQuizBody }>, reply: FastifyReply) {
-  const { uploadId, aiApiKey, outputMode, botToken, chatId } = request.body;
+  const { uploadId, aiApiKey, aiModel, outputMode, botToken, chatId } = request.body;
   const session = getUploadSession(uploadId);
 
   if (!session) {
@@ -77,9 +77,13 @@ export async function generateQuizController(request: FastifyRequest<{ Body: Gen
     return reply.code(400).send({ success: false, error: 'missing ai api key' });
   }
 
-  request.log.info({ uploadId, outputMode, chunkCount: session.chunkCount }, 'starting quiz generation');
+  if (!aiModel) {
+    return reply.code(400).send({ success: false, error: 'missing ai model' });
+  }
 
-  const generated = await processChunksSequentially(session.chunks, aiApiKey);
+  request.log.info({ uploadId, outputMode, chunkCount: session.chunkCount, aiModel }, 'starting quiz generation');
+
+  const generated = await processChunksSequentially(session.chunks, aiApiKey, aiModel);
   if (!generated.questions.length) {
     return reply.code(422).send({ success: false, error: 'no questions generated' });
   }

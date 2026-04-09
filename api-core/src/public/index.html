@@ -23,19 +23,28 @@
   </head>
   <body>
     <div class="container">
-      <h1>PDF → CUET Notes & Quiz</h1>
+      <h1>PDF → CUET Notes & Quiz (NVIDIA API)</h1>
       <form id="quiz-form">
         <label>PDF File</label>
         <input id="pdf" type="file" accept="application/pdf" required />
+
+        <label>NVIDIA API Key</label>
+        <input id="aiApiKey" type="password" placeholder="nvapi-..." required />
+
+        <label>NVIDIA Model</label>
+        <select id="aiModel" required>
+          <option value="meta/llama-3.1-405b-instruct">meta/llama-3.1-405b-instruct</option>
+          <option value="meta/llama-3.1-70b-instruct">meta/llama-3.1-70b-instruct</option>
+          <option value="meta/llama-3.1-8b-instruct">meta/llama-3.1-8b-instruct</option>
+          <option value="mistralai/mixtral-8x7b-instruct-v0.1">mistralai/mixtral-8x7b-instruct-v0.1</option>
+          <option value="google/gemma-2-27b-it">google/gemma-2-27b-it</option>
+        </select>
 
         <label>Telegram Bot Token</label>
         <input id="botToken" placeholder="123456:ABC..." />
 
         <label>Telegram Chat ID</label>
         <input id="chatId" placeholder="-100123... or user id" />
-
-        <label>AI API Key</label>
-        <input id="aiApiKey" type="password" placeholder="sk-..." required />
 
         <label>Output Mode</label>
         <select id="outputMode">
@@ -67,7 +76,7 @@
       const submitBtn = document.getElementById('submitBtn');
 
       const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
-      for (const key of ['botToken', 'chatId', 'aiApiKey', 'outputMode']) {
+      for (const key of ['botToken', 'chatId', 'aiApiKey', 'aiModel', 'outputMode']) {
         if (saved[key]) document.getElementById(key).value = saved[key];
       }
 
@@ -102,22 +111,25 @@
         const botToken = document.getElementById('botToken').value.trim();
         const chatId = document.getElementById('chatId').value.trim();
         const aiApiKey = document.getElementById('aiApiKey').value.trim();
+        const aiModel = document.getElementById('aiModel').value;
         const outputMode = document.getElementById('outputMode').value;
 
-        localStorage.setItem(storageKey, JSON.stringify({ botToken, chatId, aiApiKey, outputMode }));
+        localStorage.setItem(storageKey, JSON.stringify({ botToken, chatId, aiApiKey, aiModel, outputMode }));
         resultEl.textContent = '';
         logsEl.textContent = '';
 
         addLog('form submitted', {
           hasPdf: !!pdf,
           outputMode,
+          aiModel,
           hasBotToken: !!botToken,
           hasChatId: !!chatId,
           hasAiApiKey: !!aiApiKey
         });
 
         if (!pdf) return setStatus('error', 'Please upload a PDF file.');
-        if (!aiApiKey) return setStatus('error', 'AI API key is required.');
+        if (!aiApiKey) return setStatus('error', 'NVIDIA API key is required.');
+        if (!aiModel) return setStatus('error', 'Please select an NVIDIA model.');
         if (outputMode === 'telegram' && (!botToken || !chatId)) {
           return setStatus('error', 'Telegram bot token and chat ID are required for Telegram mode.');
         }
@@ -146,12 +158,13 @@
           addLog('calling /pdf-quiz/generate-quiz', {
             uploadId: uploadData.data.uploadId,
             outputMode,
+            aiModel,
             chunkCount: processData?.data?.chunkCount
           });
           const genRes = await fetch('/pdf-quiz/generate-quiz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uploadId: uploadData.data.uploadId, aiApiKey, outputMode, botToken, chatId })
+            body: JSON.stringify({ uploadId: uploadData.data.uploadId, aiApiKey, aiModel, outputMode, botToken, chatId })
           });
           const genData = await parseResponse(genRes, 'generate');
           if (!genRes.ok) throw new Error(genData.error || 'Generation failed');

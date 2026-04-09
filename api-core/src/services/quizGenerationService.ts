@@ -1,12 +1,12 @@
 import { generateFromChunk } from './aiService.js';
 import type { GeneratedPayload, QuizQuestion } from '../types/pdfQuiz.js';
 
-export async function processChunksSequentially(chunks: string[], apiKey: string): Promise<GeneratedPayload> {
+export async function processChunksSequentially(chunks: string[], apiKey: string, model: string): Promise<GeneratedPayload> {
   const keyPoints = new Set<string>();
   const questions: QuizQuestion[] = [];
 
   for (const chunk of chunks) {
-    const generated = await generateFromChunk(chunk, apiKey);
+    const generated = await generateFromChunk(chunk, apiKey, model);
     for (const point of generated.key_points) {
       if (point) keyPoints.add(point);
     }

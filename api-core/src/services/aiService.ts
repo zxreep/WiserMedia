@@ -1,8 +1,6 @@
 import type { GeneratedPayload } from '../types/pdfQuiz.js';
-import { env } from '../utils/env.js';
 
-const AI_MODEL = env.aiModel;
-const AI_ENDPOINT = resolveChatCompletionsUrl(env.aiBaseUrl);
+const NVIDIA_CHAT_COMPLETIONS_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 const SYSTEM_PROMPT = `You are an expert CUET exam setter. Focus on conceptual and tricky questions.
 Avoid direct fact recall and avoid obvious answer patterns.
@@ -10,15 +8,15 @@ Generate difficult MCQs that test understanding, inference and confusion between
 Return strict JSON only with keys: key_points, questions.
 Each question must include: question, options (4), correct_option_id (0-3), explanation.`;
 
-export async function generateFromChunk(chunk: string, apiKey: string): Promise<GeneratedPayload> {
-  const response = await fetch(AI_ENDPOINT, {
+export async function generateFromChunk(chunk: string, apiKey: string, model: string): Promise<GeneratedPayload> {
+  const response = await fetch(NVIDIA_CHAT_COMPLETIONS_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: AI_MODEL,
+      model,
       temperature: 0.3,
       top_p: 0.7,
       max_tokens: 1200,
@@ -70,14 +68,6 @@ export async function generateFromChunk(chunk: string, apiKey: string): Promise<
       .filter((q) => q.question && q.options.length === 4 && q.correct_option_id >= 0 && q.correct_option_id <= 3)
       .slice(0, 8)
   };
-}
-
-function resolveChatCompletionsUrl(baseUrl: string): string {
-  const trimmed = baseUrl.replace(/\/+$/, '');
-  if (trimmed.endsWith('/chat/completions')) {
-    return trimmed;
-  }
-  return `${trimmed}/chat/completions`;
 }
 
 function normalizeContent(content: unknown): string {
