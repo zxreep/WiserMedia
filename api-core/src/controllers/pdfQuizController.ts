@@ -4,7 +4,7 @@ import { extractPdfText } from '../services/pdfService.js';
 import { processChunksSequentially } from '../services/quizGenerationService.js';
 import { getQuizQuestions, saveGeneratedQuiz, trackActivity } from '../db/pdfQuizRepo.js';
 import { sendQuizPolls } from '../services/telegramService.js';
-import type { AddQuizBody, GenerateQuizBody, ProcessUploadBody, SendTelegramBody } from '../types/pdfQuiz.js';
+import type { AddQuizBody, GenerateQuizBody, ProcessUploadBody, RouteRequestBody, SendTelegramBody } from '../types/pdfQuiz.js';
 
 export async function uploadPdfController(request: FastifyRequest, reply: FastifyReply) {
   const file = await request.file();
@@ -157,6 +157,37 @@ export async function addQuizFromJsonController(request: FastifyRequest<{ Body: 
   return reply.send({ success: true, data: { quizId, questionCount: normalizedQuestions.length } });
 }
 
+
+
+export async function requestRouterController(request: FastifyRequest<{ Body: RouteRequestBody }>, reply: FastifyReply) {
+  const { provider, path, method = 'POST', apiKey, payload } = request.body;
+
+  if (provider !== 'nvidia' || !path || !apiKey) {
+    return reply.code(400).send({ success: false, error: 'invalid router payload' });
+  }
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `https://integrate.api.nvidia.com/v1${cleanPath}`;
+
+  const upstream = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: method === 'POST' ? JSON.stringify(payload ?? {}) : undefined
+  });
+
+  const bodyText = await upstream.text();
+  let body: unknown;
+  try {
+    body = bodyText ? JSON.parse(bodyText) : {};
+  } catch {
+    body = { raw: bodyText };
+  }
+
+  return reply.code(upstream.status).send({ success: upstream.ok, status: upstream.status, data: body });
+}
 export async function sendTelegramController(request: FastifyRequest<{ Body: SendTelegramBody }>, reply: FastifyReply) {
   const { quizId, botToken, chatId } = request.body;
   if (!botToken || !chatId) {

@@ -48,6 +48,15 @@ export interface AddQuizBody {
   }>;
 }
 
+
+export interface RouteRequestBody {
+  provider: 'nvidia';
+  path: string;
+  method?: 'GET' | 'POST';
+  apiKey: string;
+  payload?: Record<string, unknown>;
+}
+
 export interface SendTelegramBody {
   quizId: number;
   botToken: string;

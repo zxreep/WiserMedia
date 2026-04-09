@@ -40,6 +40,7 @@ Open `http://localhost:3000`.
 - `POST /pdf-quiz/process-pdf`
 - `POST /pdf-quiz/generate-quiz`
 - `POST /pdf-quiz/add-quiz-json`
+- `POST /pdf-quiz/request-router` (server-side proxy for NVIDIA requests to avoid browser CORS blocks)
 - `POST /pdf-quiz/send-telegram`
 
 ### Add quiz via JSON payload
@@ -72,3 +73,17 @@ Open `http://localhost:3000`.
   - Build: `npm install && npm run build`
   - Start: `npm run start`
 - Set `DATABASE_URL` in Render environment variables.
+
+
+### Request router (CORS-safe proxy)
+`POST /pdf-quiz/request-router`
+
+```json
+{
+  "provider": "nvidia",
+  "path": "/chat/completions",
+  "method": "POST",
+  "apiKey": "nvapi-...",
+  "payload": { "model": "meta/llama-3.1-70b-instruct", "messages": [{ "role": "user", "content": "hello" }] }
+}
+```

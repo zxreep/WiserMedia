@@ -57,7 +57,8 @@ export function buildApp() {
       'upload not found',
       'quiz not found',
       'no questions generated',
-      'invalid quiz payload'
+      'invalid quiz payload',
+      'invalid router payload'
     ]);
 
     if (exact400Errors.has(errorMessage)) {

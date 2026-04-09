@@ -5,11 +5,14 @@ export async function ensurePdfQuizTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS generation_activity (
       id BIGSERIAL PRIMARY KEY,
-      quiz_id BIGINT REFERENCES quizzes(id) ON DELETE SET NULL,
+      quiz_id BIGINT,
       event_type TEXT NOT NULL,
       metadata JSONB NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    ALTER TABLE generation_activity
+      DROP CONSTRAINT IF EXISTS generation_activity_quiz_id_fkey;
   `);
 }
 
