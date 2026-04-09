@@ -6,7 +6,7 @@
     <title>PDF to CUET Quiz</title>
     <style>
       body { font-family: Inter, Arial, sans-serif; background: #f6f8fb; margin: 0; }
-      .container { max-width: 760px; margin: 40px auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.08); }
+      .container { max-width: 900px; margin: 40px auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.08); }
       h1 { margin-top: 0; }
       label { display:block; margin-top: 12px; font-weight: 600; }
       input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d0d7e2; margin-top: 6px; }
@@ -17,6 +17,8 @@
       .success { background: #eafaf0; color: #147a37; }
       .error { background: #ffeef0; color: #b42318; }
       pre { background:#0f172a; color:#e2e8f0; padding:12px; overflow:auto; border-radius:8px; }
+      .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top: 12px; }
+      @media (max-width: 820px) { .grid { grid-template-columns:1fr; } }
     </style>
   </head>
   <body>
@@ -44,13 +46,23 @@
         <button id="submitBtn" type="submit">Generate Quiz</button>
       </form>
       <div id="status"></div>
-      <pre id="result"></pre>
+      <div class="grid">
+        <div>
+          <h3>Result</h3>
+          <pre id="result"></pre>
+        </div>
+        <div>
+          <h3>Logs</h3>
+          <pre id="logs"></pre>
+        </div>
+      </div>
     </div>
 
     <script>
       const storageKey = 'wm_pdf_quiz_creds_v1';
       const statusEl = document.getElementById('status');
       const resultEl = document.getElementById('result');
+      const logsEl = document.getElementById('logs');
       const form = document.getElementById('quiz-form');
       const submitBtn = document.getElementById('submitBtn');
 
@@ -59,9 +71,29 @@
         if (saved[key]) document.getElementById(key).value = saved[key];
       }
 
+      const now = () => new Date().toISOString();
+      const addLog = (message, payload) => {
+        const line = payload ? `[${now()}] ${message} :: ${JSON.stringify(payload)}` : `[${now()}] ${message}`;
+        logsEl.textContent = `${logsEl.textContent}${line}\n`;
+        logsEl.scrollTop = logsEl.scrollHeight;
+      };
+
       const setStatus = (type, msg) => {
         statusEl.className = `status ${type}`;
         statusEl.textContent = msg;
+        addLog(`status:${type}`, { msg });
+      };
+
+      const parseResponse = async (res, tag) => {
+        const text = await res.text();
+        let json;
+        try {
+          json = text ? JSON.parse(text) : {};
+        } catch {
+          json = { raw: text };
+        }
+        addLog(`${tag} response`, { status: res.status, ok: res.ok, body: json });
+        return json;
       };
 
       form.addEventListener('submit', async (e) => {
@@ -74,6 +106,15 @@
 
         localStorage.setItem(storageKey, JSON.stringify({ botToken, chatId, aiApiKey, outputMode }));
         resultEl.textContent = '';
+        logsEl.textContent = '';
+
+        addLog('form submitted', {
+          hasPdf: !!pdf,
+          outputMode,
+          hasBotToken: !!botToken,
+          hasChatId: !!chatId,
+          hasAiApiKey: !!aiApiKey
+        });
 
         if (!pdf) return setStatus('error', 'Please upload a PDF file.');
         if (!aiApiKey) return setStatus('error', 'AI API key is required.');
@@ -86,31 +127,39 @@
           setStatus('loading', 'Uploading PDF...');
           const formData = new FormData();
           formData.append('file', pdf);
+          addLog('calling /pdf-quiz/upload-pdf', { fileName: pdf.name, size: pdf.size });
           const uploadRes = await fetch('/pdf-quiz/upload-pdf', { method: 'POST', body: formData });
-          const uploadData = await uploadRes.json();
+          const uploadData = await parseResponse(uploadRes, 'upload');
           if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
 
           setStatus('loading', 'Processing chunks...');
+          addLog('calling /pdf-quiz/process-pdf', { uploadId: uploadData.data.uploadId });
           const processRes = await fetch('/pdf-quiz/process-pdf', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uploadId: uploadData.data.uploadId })
           });
-          const processData = await processRes.json();
+          const processData = await parseResponse(processRes, 'process');
           if (!processRes.ok) throw new Error(processData.error || 'Process failed');
 
           setStatus('loading', 'Generating notes and CUET quiz...');
+          addLog('calling /pdf-quiz/generate-quiz', {
+            uploadId: uploadData.data.uploadId,
+            outputMode,
+            chunkCount: processData?.data?.chunkCount
+          });
           const genRes = await fetch('/pdf-quiz/generate-quiz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uploadId: uploadData.data.uploadId, aiApiKey, outputMode, botToken, chatId })
           });
-          const genData = await genRes.json();
+          const genData = await parseResponse(genRes, 'generate');
           if (!genRes.ok) throw new Error(genData.error || 'Generation failed');
 
           setStatus('success', outputMode === 'telegram' ? 'Quiz generated and sent to Telegram.' : 'Quiz generated successfully.');
           resultEl.textContent = JSON.stringify(genData, null, 2);
         } catch (err) {
+          addLog('caught error', { message: err.message, stack: err.stack });
           setStatus('error', err.message || 'Something went wrong');
         } finally {
           submitBtn.disabled = false;

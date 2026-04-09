@@ -22,6 +22,8 @@ export async function uploadPdfController(request: FastifyRequest, reply: Fastif
     characterCount: extracted.text.length
   });
 
+  request.log.info({ fileName: file.filename, chunkCount: session.chunkCount }, 'pdf uploaded and parsed');
+
   await trackActivity('upload_pdf', {
     upload_id: session.id,
     file_name: file.filename,
@@ -45,6 +47,8 @@ export async function processPdfController(request: FastifyRequest<{ Body: Proce
   if (!session) {
     return reply.code(404).send({ success: false, error: 'upload not found' });
   }
+
+  request.log.info({ uploadId: session.id, chunkCount: session.chunkCount }, 'pdf processing validated');
 
   await trackActivity('process_pdf', {
     upload_id: session.id,
@@ -73,6 +77,8 @@ export async function generateQuizController(request: FastifyRequest<{ Body: Gen
     return reply.code(400).send({ success: false, error: 'missing ai api key' });
   }
 
+  request.log.info({ uploadId, outputMode, chunkCount: session.chunkCount }, 'starting quiz generation');
+
   const generated = await processChunksSequentially(session.chunks, aiApiKey);
   if (!generated.questions.length) {
     return reply.code(422).send({ success: false, error: 'no questions generated' });
@@ -94,6 +100,8 @@ export async function generateQuizController(request: FastifyRequest<{ Body: Gen
     telegramSent = true;
     await trackActivity('telegram_sent', { chat_id: chatId, question_count: generated.questions.length }, quizId);
   }
+
+  request.log.info({ quizId, questionCount: generated.questions.length, telegramSent }, 'quiz generation complete');
 
   return reply.send({
     success: true,
@@ -119,6 +127,7 @@ export async function sendTelegramController(request: FastifyRequest<{ Body: Sen
 
   await sendQuizPolls(botToken, chatId, questions);
   await trackActivity('telegram_sent', { chat_id: chatId, question_count: questions.length }, quizId);
+  request.log.info({ quizId, sentCount: questions.length, chatId }, 'telegram quiz sent');
 
   return reply.send({ success: true, data: { quizId, sentCount: questions.length } });
 }

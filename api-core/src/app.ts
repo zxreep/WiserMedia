@@ -33,14 +33,13 @@ export function buildApp() {
   app.register(leaderboardRoutes, { prefix: '/leaderboard' });
   app.register(mentorshipRoutes, { prefix: '/mentorship' });
   app.register(premiumRoutes, { prefix: '/premium' });
-
   app.register(pdfQuizRoutes, { prefix: '/pdf-quiz' });
 
-  app.setErrorHandler((error, _request, reply) => {
-    app.log.error(error);
+  app.setErrorHandler((error, request, reply) => {
+    app.log.error({ err: error, url: request.url, method: request.method }, 'request failed');
     const errorMessage = error instanceof Error ? error.message : 'unknown error';
 
-    const knownErrors = new Set([
+    const exact400Errors = new Set([
       'invalid quiz',
       'invalid attempt',
       'attempt already submitted',
@@ -51,14 +50,27 @@ export function buildApp() {
       'not assigned mentor',
       'invalid pdf',
       'pdf too large',
-      'pdf has no extractable text'
+      'pdf has no extractable text',
+      'missing ai api key',
+      'missing telegram credentials',
+      'upload not found',
+      'quiz not found',
+      'no questions generated'
     ]);
 
-    if (knownErrors.has(errorMessage)) {
+    if (exact400Errors.has(errorMessage)) {
       return reply.code(400).send({ success: false, error: errorMessage });
     }
 
-    return reply.code(500).send({ success: false, error: 'Internal server error' });
+    if (errorMessage.startsWith('ai api failure')) {
+      return reply.code(502).send({ success: false, error: errorMessage });
+    }
+
+    if (errorMessage.startsWith('telegram api failure')) {
+      return reply.code(502).send({ success: false, error: errorMessage });
+    }
+
+    return reply.code(500).send({ success: false, error: `Internal server error: ${errorMessage}` });
   });
 
   return app;
