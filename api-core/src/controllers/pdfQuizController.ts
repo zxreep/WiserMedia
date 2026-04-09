@@ -85,7 +85,16 @@ export async function generateQuizController(request: FastifyRequest<{ Body: Gen
 
   const generated = await processChunksSequentially(session.chunks, aiApiKey, aiModel);
   if (!generated.questions.length) {
-    return reply.code(422).send({ success: false, error: 'no questions generated' });
+    return reply.send({
+      success: true,
+      data: {
+        quizId: null,
+        keyPoints: generated.key_points,
+        questions: [],
+        telegramSent: false,
+        message: 'insufficient content for question generation'
+      }
+    });
   }
 
   const quizId = await saveGeneratedQuiz({
