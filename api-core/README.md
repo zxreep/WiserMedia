@@ -18,7 +18,7 @@ Required:
 Optional:
 - `PORT` (default `3000`)
 - `NODE_ENV` (`development` or `production`)
-- `AI_BASE_URL` (default OpenAI chat completions endpoint)
+- `AI_BASE_URL` (base URL, e.g. `https://integrate.api.nvidia.com/v1` or `https://api.openai.com/v1`)
 - `AI_MODEL` (default `gpt-4o-mini`)
 
 ## Local setup
