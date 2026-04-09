@@ -73,6 +73,72 @@ type SubmitAnswer = {
   selected_option: number;
 };
 
+async function getSubmittedAttemptResult(
+  client: { query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }> },
+  attemptId: number
+) {
+  const summary = await client.query<{
+    score: number;
+    correct_count: number;
+    total_questions: number;
+    user_id: number;
+  }>(
+    `SELECT score, correct_count, total_questions, user_id
+     FROM quiz_attempts
+     WHERE id = $1`,
+    [attemptId]
+  );
+
+  if (summary.rows.length === 0) {
+    throw new Error('invalid attempt');
+  }
+
+  const answerRows = await client.query<{
+    question_id: number;
+    selected_option: number;
+    is_correct: boolean;
+    question_text: string;
+    options: string;
+    correct_option_index: number;
+  }>(
+    `SELECT qaa.question_id,
+            qaa.selected_option,
+            qaa.is_correct,
+            qq.question_text,
+            qq.options::text AS options,
+            qq.correct_option_index
+     FROM quiz_attempt_answers qaa
+     INNER JOIN quiz_questions qq ON qq.id = qaa.question_id
+     WHERE qaa.attempt_id = $1`,
+    [attemptId]
+  );
+
+  const wrongQuestions = answerRows.rows
+    .filter((row) => !row.is_correct)
+    .map((row) => {
+      const options = JSON.parse(row.options) as string[];
+      const selectedOption = Number(row.selected_option);
+      const correctOption = Number(row.correct_option_index);
+
+      return {
+        question_id: Number(row.question_id),
+        question: row.question_text,
+        selected_option: selectedOption,
+        correct_option: correctOption,
+        selected_text: options[selectedOption] ?? '',
+        correct_text: options[correctOption] ?? ''
+      };
+    });
+
+  return {
+    score: Number(summary.rows[0].score ?? 0),
+    correct: Number(summary.rows[0].correct_count ?? 0),
+    total: Number(summary.rows[0].total_questions ?? 0),
+    xp_earned: Number(summary.rows[0].correct_count ?? 0) * 10,
+    wrong_questions: wrongQuestions
+  };
+}
+
 export async function submitQuiz(quizId: number, attemptId: number, answers: SubmitAnswer[]) {
   return withTransaction(async (client) => {
     const attemptCheck = await client.query<{
@@ -91,7 +157,7 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
     }
 
     if (attemptCheck.rows[0].status === 'submitted') {
-      throw new Error('attempt already submitted');
+      return getSubmittedAttemptResult(client, attemptId);
     }
 
     const questions = await client.query<{
@@ -104,7 +170,20 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
       [quizId]
     );
 
-    const byId = new Map(questions.rows.map((q) => [q.id, q]));
+    const byId = new Map(questions.rows.map((q) => [Number(q.id), q]));
+    const normalizedAnswers = answers
+      .map((answer) => ({
+        question_id: Number(answer.question_id),
+        selected_option: Number(answer.selected_option)
+      }))
+      .filter(
+        (answer) =>
+          Number.isInteger(answer.question_id) &&
+          Number.isInteger(answer.selected_option) &&
+          answer.selected_option >= 0 &&
+          answer.selected_option <= 3
+      );
+
     let correct = 0;
     const wrongQuestions: Array<{
       question_id: number;
@@ -115,24 +194,25 @@ export async function submitQuiz(quizId: number, attemptId: number, answers: Sub
       correct_text: string;
     }> = [];
 
-    for (const answer of answers) {
+    for (const answer of normalizedAnswers) {
       const question = byId.get(answer.question_id);
       if (!question) {
         continue;
       }
 
-      const isCorrect = answer.selected_option === question.correct_option_index;
+      const correctOption = Number(question.correct_option_index);
+      const isCorrect = answer.selected_option === correctOption;
       if (isCorrect) {
         correct += 1;
       } else {
         const options = JSON.parse(question.options) as string[];
         wrongQuestions.push({
-          question_id: question.id,
+          question_id: Number(question.id),
           question: question.question_text,
           selected_option: answer.selected_option,
-          correct_option: question.correct_option_index,
+          correct_option: correctOption,
           selected_text: options[answer.selected_option] ?? '',
-          correct_text: options[question.correct_option_index] ?? ''
+          correct_text: options[correctOption] ?? ''
         });
       }
 
