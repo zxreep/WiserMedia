@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PDF → Quiz Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:#080c10; --surface:#0d1117; --border:#1e2a38; --border-bright:#2a3f56;
+  --accent:#00d4ff; --accent2:#ff6b35; --accent3:#39ff14;
+  --text:#c9d8e8; --text-dim:#4a6278; --text-bright:#e8f4ff;
+  --log-info:#00d4ff; --log-ok:#39ff14; --log-warn:#ffcc00;
+  --log-error:#ff4444; --log-ai:#bf7bff; --log-send:#ff6b35;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.container{max-width:960px;margin:0 auto;padding:30px 16px 80px;position:relative;z-index:1;}
+
+header{margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:24px;}
+.badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:3px;color:var(--accent);border:1px solid var(--accent);padding:3px 10px;margin-bottom:12px;text-transform:uppercase;animation:pulse-border 2s ease-in-out infinite;}
+@keyframes pulse-border{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0);}50%{box-shadow:0 0 8px 2px rgba(0,212,255,.25);}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(24px,5vw,42px);font-weight:800;color:var(--text-bright);line-height:1.1;}
+h1 span{color:var(--accent);}
+.subtitle{margin-top:6px;font-size:11px;color:var(--text-dim);letter-spacing:1px;}
+
+/* ALERT BOX */
+#alert-box{display:none;border-left:4px solid var(--log-error);padding:16px;margin-bottom:16px;background:#150808;border:1px solid var(--log-error);}
+#alert-box.show{display:block;}
+#alert-box.warn-box{background:#15120a;border-color:var(--log-warn);}
+#alert-box.ok-box{background:#081508;border-color:var(--log-ok);}
+.alert-title{font-size:11px;font-weight:700;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;}
+.alert-title.err{color:var(--log-error);}
+.alert-title.warn{color:var(--log-warn);}
+.alert-title.ok{color:var(--log-ok);}
+#alert-msg{font-size:12px;color:var(--text);line-height:1.8;}
+#alert-msg code{background:#1a1a1a;padding:1px 5px;color:var(--accent3);font-size:11px;word-break:break-all;}
+#alert-msg strong{color:var(--text-bright);}
+
+.panel{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:16px;position:relative;}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);}
+.panel-label{font-size:10px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.panel-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:580px){.form-grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.full{grid-column:1/-1;}
+label{font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
+input,select{background:var(--bg);border:1px solid var(--border);color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;-webkit-appearance:none;border-radius:0;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,.1);}
+input[type="password"]{letter-spacing:2px;}
+select option{background:#0d1117;}
+
+.drop-zone{border:2px dashed var(--border-bright);padding:32px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(0,212,255,.04);}
+.drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;padding:0;border:none;}
+.drop-icon{font-size:26px;margin-bottom:6px;display:block;}
+.drop-text{font-size:12px;color:var(--text-dim);}
+.drop-text strong{color:var(--accent);}
+#file-status{margin-top:10px;font-size:12px;color:var(--accent3);word-break:break-all;}
+
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+button{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;padding:11px 18px;transition:all .2s;-webkit-tap-highlight-color:transparent;border-radius:0;}
+.btn-primary{background:var(--accent);color:var(--bg);}
+.btn-primary:hover:not(:disabled){background:#33ddff;box-shadow:0 0 20px rgba(0,212,255,.4);}
+.btn-secondary{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn-secondary:hover:not(:disabled){border-color:var(--text-dim);color:var(--text);}
+.btn-danger{background:transparent;color:var(--log-error);border:1px solid var(--log-error);}
+.btn-ok{background:transparent;color:var(--log-ok);border:1px solid var(--log-ok);}
+.btn-ok:hover:not(:disabled){background:rgba(57,255,20,.08);}
+.btn-warn{background:transparent;color:var(--log-warn);border:1px solid var(--log-warn);}
+.btn-warn:hover:not(:disabled){background:rgba(255,204,0,.08);}
+button:disabled{opacity:.3;cursor:not-allowed;}
+
+.progress-wrap{display:none;margin-top:16px;}
+.progress-wrap.show{display:block;}
+.progress-header{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:6px;}
+.progress-bar-bg{background:var(--border);height:4px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .4s ease;}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+@media(max-width:480px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:12px 10px;text-align:center;}
+.stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);line-height:1;}
+.stat-label{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-top:3px;}
+
+#log-console{background:#030507;border:1px solid var(--border);height:300px;overflow-y:auto;padding:14px;font-size:11px;line-height:1.8;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;}
+#log-console::-webkit-scrollbar{width:3px;}
+#log-console::-webkit-scrollbar-thumb{background:var(--border-bright);}
+.log-line{display:flex;gap:8px;align-items:flex-start;padding:1px 0;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1}}
+.log-ts{color:var(--text-dim);flex-shrink:0;font-size:10px;}
+.log-tag{flex-shrink:0;font-weight:600;font-size:9px;padding:2px 5px;letter-spacing:1px;}
+.log-msg{flex:1;word-break:break-word;}
+.tag-info{color:var(--bg);background:var(--log-info);}
+.tag-ok{color:var(--bg);background:var(--log-ok);}
+.tag-warn{color:var(--bg);background:var(--log-warn);}
+.tag-error{color:var(--bg);background:var(--log-error);}
+.tag-ai{color:var(--bg);background:var(--log-ai);}
+.tag-send{color:var(--bg);background:var(--log-send);}
+.tag-data{color:#eee;background:#333;}
+.msg-info{color:var(--log-info);}
+.msg-ok{color:var(--log-ok);}
+.msg-warn{color:var(--log-warn);}
+.msg-error{color:var(--log-error);}
+.msg-ai{color:var(--log-ai);}
+.msg-send{color:var(--log-send);}
+.msg-data{color:#888;}
+
+#results-section{display:none;}
+#results-section.show{display:block;}
+.q-card{background:var(--surface);border:1px solid var(--border);padding:18px;margin-bottom:12px;position:relative;}
+.q-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);}
+.q-num{font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+.q-text{font-size:13px;color:var(--text-bright);margin-bottom:12px;line-height:1.7;}
+.q-options{list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:10px;}
+.q-opt{padding:8px 12px;background:var(--bg);border:1px solid var(--border);font-size:12px;color:var(--text);display:flex;gap:8px;line-height:1.5;}
+.q-opt.correct{border-color:var(--accent3);color:var(--accent3);background:rgba(57,255,20,.06);}
+.q-opt-letter{font-weight:700;color:var(--text-dim);flex-shrink:0;}
+.q-opt.correct .q-opt-letter{color:var(--accent3);}
+.q-exp{font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:9px;line-height:1.6;}
+.q-exp strong{color:var(--accent2);}
+
+#toast{position:fixed;bottom:20px;right:16px;left:16px;background:var(--surface);border:1px solid var(--border-bright);padding:12px 16px;font-size:12px;z-index:100;transform:translateY(80px);opacity:0;transition:all .3s ease;text-align:center;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-left:3px solid var(--log-ok);}
+#toast.error{border-left:3px solid var(--log-error);}
+#toast.info{border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="badge">⬡ AI Quiz Engine v2</div>
+  <h1>PDF → <span>MCQ</span> Generator</h1>
+  <p class="subtitle">// NVIDIA NIM · Auto-chunked · High difficulty · REST delivery</p>
+</header>
+
+<div id="alert-box">
+  <div class="alert-title err" id="alert-title">ERROR</div>
+  <div id="alert-msg"></div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-val" id="stat-pages">0</div><div class="stat-label">Pages</div></div>
+  <div class="stat-card"><div class="stat-val" id="stat-chunks">0</div><div class="stat-label">Chunks</div></div>
+  <div class="stat-card"><div class="stat-val" id="stat-questions">0</div><div class="stat-label">Questions</div></div>
+  <div class="stat-card"><div class="stat-val" id="stat-status">—</div><div class="stat-label">Status</div></div>
+</div>
+
+<!-- CONFIG -->
+<div class="panel">
+  <div class="panel-label">⚙ Configuration</div>
+  <div class="form-grid">
+    <div class="field full">
+      <label>NVIDIA API Key</label>
+      <input type="password" id="nvidia-key" placeholder="nvapi-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label>Quiz Title</label>
+      <input type="text" id="quiz-title" placeholder="e.g. CUET: Thermodynamics" />
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <input type="text" id="quiz-desc" placeholder="High difficulty concept questions" />
+    </div>
+    <div class="field">
+      <label>Questions per Chunk</label>
+      <select id="q-per-chunk">
+        <option value="3">3 per chunk</option>
+        <option value="5" selected>5 per chunk</option>
+        <option value="8">8 per chunk</option>
+        <option value="10">10 per chunk</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Chunk Size (chars)</label>
+      <select id="chunk-size">
+        <option value="2000">2000 — small</option>
+        <option value="3500" selected>3500 — medium</option>
+        <option value="5000">5000 — large</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>NVIDIA Model</label>
+      <select id="nvidia-model">
+        <option value="nvidia/llama-3.1-nemotron-70b-instruct">nemotron-70b (recommended)</option>
+        <option value="meta/llama-3.1-405b-instruct">llama-3.1-405b</option>
+        <option value="meta/llama-3.3-70b-instruct">llama-3.3-70b</option>
+        <option value="mistralai/mixtral-8x22b-instruct-v0.1">mixtral-8x22b</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Difficulty Focus</label>
+      <select id="difficulty">
+        <option value="analytical">Analytical &amp; Logical</option>
+        <option value="conceptual">Deep Conceptual</option>
+        <option value="application">Application-Based</option>
+        <option value="mixed">Mixed Hard</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- DIAGNOSTICS -->
+<div class="panel">
+  <div class="panel-label">🔍 Diagnostics — Run These First</div>
+  <div class="btn-row">
+    <button class="btn-warn" id="btn-test-server">Test Server</button>
+    <button class="btn-warn" id="btn-test-nvidia">Test NVIDIA Key</button>
+  </div>
+  <p style="font-size:10px;color:var(--text-dim);margin-top:12px;line-height:1.8;">
+    → <strong style="color:var(--log-warn)">Test Server</strong> — checks if the quiz endpoint is reachable and CORS is allowed.<br/>
+    → <strong style="color:var(--log-warn)">Test NVIDIA Key</strong> — verifies your key works before wasting time on a full PDF run.
+  </p>
+</div>
+
+<!-- PDF UPLOAD -->
+<div class="panel">
+  <div class="panel-label">⬆ PDF Upload</div>
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="pdf-input" accept=".pdf" />
+    <span class="drop-icon">📄</span>
+    <div class="drop-text"><strong>Tap to select PDF</strong> or drag &amp; drop</div>
+    <div id="file-status"></div>
+  </div>
+</div>
+
+<!-- ACTIONS -->
+<div class="panel">
+  <div class="panel-label">▶ Actions</div>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-generate" disabled>Generate &amp; Send</button>
+    <button class="btn-ok" id="btn-download" disabled>⬇ Download JSON</button>
+    <button class="btn-secondary" id="btn-preview" disabled>Preview</button>
+    <button class="btn-danger" id="btn-clear">Clear</button>
+  </div>
+  <p style="font-size:10px;color:var(--text-dim);margin-top:10px;line-height:1.8;">
+    → <strong style="color:var(--log-ok)">Download JSON</strong> saves the quiz payload locally if the POST fails (CORS fallback).<br/>
+    → You can then POST it manually or via Postman.
+  </p>
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-header">
+      <span id="progress-label">Processing...</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG CONSOLE -->
+<div class="panel">
+  <div class="panel-label" style="justify-content:space-between;">
+    <span>⬡ Live Console</span>
+    <button class="btn-secondary" onclick="clearLogs()" style="padding:4px 10px;font-size:9px;margin-left:auto;">Clear</button>
+  </div>
+  <div id="log-console">
+    <div class="log-line">
+      <span class="log-ts">--:--:--</span>
+      <span class="log-tag tag-info">INFO</span>
+      <span class="log-msg msg-info">System ready. Run diagnostics first, then upload your PDF.</span>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-section">
+  <div class="panel-label" style="margin-top:8px;">◈ Generated Questions</div>
+  <div id="questions-container"></div>
+</div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const BASE_URL = 'https://wisermedia0.onrender.com';
+let pdfText = '', allChunks = [], generatedQuestions = [], isRunning = false;
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ── LOGGING ──────────────────────────────────────────────────────────────────
+function ts() {
+  const d = new Date();
+  return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+}
+const TAGS = {info:'INFO',ok:'OK',warn:'WARN',error:'ERR',ai:'AI',send:'POST',data:'DATA'};
+function log(msg, type='info') {
+  const el = $('log-console');
+  const d = document.createElement('div');
+  d.className = 'log-line';
+  d.innerHTML = `<span class="log-ts">${ts()}</span><span class="log-tag tag-${type}">${TAGS[type]||type}</span><span class="log-msg msg-${type}">${esc(String(msg))}</span>`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLogs() { $('log-console').innerHTML=''; log('Console cleared.'); }
+
+// ── ALERT BOX ────────────────────────────────────────────────────────────────
+function showAlert(html, type='error') {
+  const box=$('alert-box'), title=$('alert-title');
+  box.className = 'show' + (type==='warn'?' warn-box':type==='ok'?' ok-box':'');
+  title.className = 'alert-title ' + (type==='ok'?'ok':type==='warn'?'warn':'err');
+  title.textContent = type==='ok'?'✅ SUCCESS':type==='warn'?'⚠ WARNING':'❌ ERROR';
+  $('alert-msg').innerHTML = html;
+  box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function hideAlert() { $('alert-box').className=''; }
+
+// ── STATS / PROGRESS / TOAST ─────────────────────────────────────────────────
+const setStat = (id,v) => $('stat-'+id).textContent = v;
+function setProgress(pct, label) {
+  $('progress-bar').style.width = pct+'%';
+  $('progress-pct').textContent = Math.round(pct)+'%';
+  $('progress-label').textContent = label;
+}
+const showProgress = v => $('progress-wrap').classList.toggle('show', v);
+function toast(msg, type='info') {
+  const t=$('toast'); t.textContent=msg; t.className=`show ${type}`;
+  setTimeout(()=>t.className='', 3500);
+}
+
+// ── DIAGNOSTICS ───────────────────────────────────────────────────────────────
+$('btn-test-server').addEventListener('click', async () => {
+  hideAlert();
+  const btn=$('btn-test-server'); btn.disabled=true; btn.textContent='Testing...';
+  log('─── Server diagnostic ───','data');
+  log(`POST ${BASE_URL}/pdf-quiz/add-quiz-json`,'send');
+  try {
+    const res = await fetch(`${BASE_URL}/pdf-quiz/add-quiz-json`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        title: '__test__', description: 'connectivity test',
+        questions: [{
+          question_text:'Test question?',
+          options:['A','B','C','D'],
+          correct_option_id:0,
+          explanation:'Test.'
+        }]
+      })
+    });
+    const body = await res.text();
+    log(`HTTP ${res.status} ${res.statusText}`, res.ok?'ok':'warn');
+    log(`Body: ${body.slice(0,300)}`,'data');
+    showAlert(
+      `Server responded with <strong>HTTP ${res.status} ${res.statusText}</strong><br/>` +
+      `Body: <code>${esc(body.slice(0,300))}</code><br/><br/>` +
+      (res.ok ? 'CORS is working ✓ You can proceed.' : 'Got a response but non-2xx status. Check your server logs.'),
+      res.ok ? 'ok' : 'warn'
+    );
+    toast(res.ok?'Server OK ✓':'Server replied with error','info');
+  } catch(err) {
+    log(`FAILED: ${err.name}: ${err.message}`,'error');
+    const isCors = err.name==='TypeError';
+    showAlert(
+      `<strong>Error:</strong> <code>${esc(err.name)}: ${esc(err.message)}</code><br/><br/>` +
+      (isCors
+        ? `<strong>This is a CORS error.</strong> The browser blocked the request because the server did not return the correct CORS headers.<br/><br/>` +
+          `Your server needs to add these response headers:<br/>` +
+          `<code>Access-Control-Allow-Origin: *</code><br/>` +
+          `<code>Access-Control-Allow-Headers: Content-Type, Accept</code><br/>` +
+          `<code>Access-Control-Allow-Methods: POST, OPTIONS</code><br/><br/>` +
+          `<strong>Quick fix (Express/Node):</strong><br/>` +
+          `<code>npm install cors</code><br/>` +
+          `<code>app.use(require('cors')())</code><br/><br/>` +
+          `Until fixed, use <strong>Download JSON</strong> and send the file via Postman or curl.`
+        : `Server may be offline or unreachable. Check <code>wisermedia0.onrender.com</code>.`
+      )
+    );
+    toast('Server test failed','error');
+  }
+  btn.disabled=false; btn.textContent='Test Server';
+});
+
+$('btn-test-nvidia').addEventListener('click', async () => {
+  hideAlert();
+  const key = $('nvidia-key').value.trim();
+  if(!key){ showAlert('Enter your NVIDIA API key first.','warn'); return; }
+  const model = $('nvidia-model').value;
+  const btn=$('btn-test-nvidia'); btn.disabled=true; btn.textContent='Testing...';
+  log('─── NVIDIA API diagnostic ───','data');
+  log(`Model: ${model}`,'ai');
+  try {
+    const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+      body:JSON.stringify({model, max_tokens:30, messages:[{role:'user',content:'Say OK'}]})
+    });
+    const data = await res.json();
+    if(!res.ok){
+      log(`NVIDIA ${res.status}: ${JSON.stringify(data)}`,'error');
+      showAlert(
+        `<strong>NVIDIA API rejected request</strong><br/>Status: <code>${res.status}</code><br/>` +
+        `Message: <code>${esc(JSON.stringify(data))}</code><br/><br/>` +
+        `Check that your key starts with <code>nvapi-</code> and is not expired.`
+      );
+      toast('NVIDIA key invalid','error');
+    } else {
+      const reply = data?.choices?.[0]?.message?.content || '(empty)';
+      log(`NVIDIA OK. Reply: ${reply}`,'ok');
+      showAlert(`API key is valid ✓<br/>Model: <code>${esc(model)}</code><br/>Reply: <code>${esc(reply)}</code>`,'ok');
+      toast('NVIDIA key valid ✓','success');
+    }
+  } catch(err){
+    log(`NVIDIA error: ${err.name}: ${err.message}`,'error');
+    if(err.name==='TypeError'){
+      showAlert(
+        `<strong>CORS block from NVIDIA API</strong><br/><br/>` +
+        `<code>integrate.api.nvidia.com</code> is blocking browser requests from this origin.<br/><br/>` +
+        `<strong>This is common on Cloudflare Pages / hosted static sites.</strong><br/><br/>` +
+        `Solutions:<br/>` +
+        `1. Open this HTML file directly in your browser (<code>file://</code>) — no CORS block<br/>` +
+        `2. Run on <code>localhost</code> via VS Code Live Server<br/>` +
+        `3. Add a Cloudflare Worker that proxies to NVIDIA API`
+      );
+    } else {
+      showAlert(`Error: <code>${esc(err.message)}</code>`);
+    }
+    toast('NVIDIA test failed','error');
+  }
+  btn.disabled=false; btn.textContent='Test NVIDIA Key';
+});
+
+// ── PDF UPLOAD ────────────────────────────────────────────────────────────────
+const dropZone=$('drop-zone'), pdfInput=$('pdf-input');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type==='application/pdf') handleFile(f);
+  else toast('Please select a PDF.','error');
+});
+pdfInput.addEventListener('change',()=>{ if(pdfInput.files[0]) handleFile(pdfInput.files[0]); });
+
+async function handleFile(file) {
+  hideAlert();
+  log(`File: ${file.name} (${(file.size/1024).toFixed(1)} KB)`,'info');
+  $('file-status').textContent = `📄 ${file.name} — Reading...`;
+  $('btn-generate').disabled=true;
+  setStat('status','📖');
+  showProgress(true); setProgress(0,'Reading PDF...');
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+    const n = pdf.numPages;
+    log(`Opened: ${n} page(s)`,'ok');
+    setStat('pages',n);
+    let full='';
+    for(let i=1;i<=n;i++){
+      const pg = await pdf.getPage(i);
+      const ct = await pg.getTextContent();
+      full += `\n[Page ${i}]\n` + ct.items.map(x=>x.str).join(' ');
+      setProgress((i/n)*40,`Extracting page ${i}/${n}`);
+    }
+    pdfText = full.trim();
+    log(`Extracted ${pdfText.length.toLocaleString()} chars`,'ok');
+    rechunk();
+    $('file-status').textContent = `✅ ${file.name} — ${n} pages · ${allChunks.length} chunks ready`;
+    $('btn-generate').disabled=false;
+    setStat('status','✅');
+    showProgress(false);
+    toast(`PDF ready: ${n} pages, ${allChunks.length} chunks`,'success');
+  } catch(err){
+    log(`PDF error: ${err.message}`,'error');
+    showAlert(`<strong>PDF Read Error</strong><br/>${esc(err.message)}<br/><br/>Make sure the file is not password-protected.`);
+    setStat('status','❌'); showProgress(false);
+    $('file-status').textContent='❌ Error reading PDF.';
+  }
+}
+
+function rechunk() {
+  const sz = parseInt($('chunk-size').value);
+  allChunks = smartChunk(pdfText, sz);
+  setStat('chunks', allChunks.length);
+  log(`Chunked: ${allChunks.length} segment(s) @ ~${sz} chars`,'info');
+}
+
+function smartChunk(text, maxLen) {
+  const paras = text.split(/\n{2,}/);
+  const chunks=[]; let cur='';
+  for(const p of paras){
+    if((cur+p).length>maxLen && cur.length>0){ chunks.push(cur.trim()); cur=p; }
+    else cur+=(cur?'\n\n':'')+p;
+  }
+  if(cur.trim()) chunks.push(cur.trim());
+  const final=[];
+  for(const c of chunks){
+    if(c.length<=maxLen) final.push(c);
+    else for(let i=0;i<c.length;i+=maxLen) final.push(c.slice(i,i+maxLen));
+  }
+  return final.filter(c=>c.trim().length>80);
+}
+$('chunk-size').addEventListener('change',()=>{ if(pdfText) rechunk(); });
+
+// ── NVIDIA CALL ───────────────────────────────────────────────────────────────
+async function callNvidia(sys, user, key, model) {
+  const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({
+      model, max_tokens:2048, temperature:0.7, top_p:0.95,
+      messages:[{role:'system',content:sys},{role:'user',content:user}]
+    })
+  });
+  if(!res.ok){ const e=await res.text(); throw new Error(`HTTP ${res.status}: ${e}`); }
+  const d=await res.json();
+  return d.choices[0].message.content;
+}
+
+function buildSystem(mode) {
+  const m = {
+    analytical:'analytical and logical reasoning — multi-step deduction, inference chains, logical elimination across conditions',
+    conceptual: 'deep conceptual understanding — underlying principles, subtle theoretical distinctions, common misconceptions',
+    application:'application-based thinking — applying theory to novel real-world scenarios, case-based and numerical problems',
+    mixed:      'mixed high difficulty — rotate between analytical deduction, deep conceptual, and application-based problems'
+  };
+  return `You are an expert academic question setter specializing in high difficulty MCQ questions.
+
+DIFFICULTY STYLE: ${m[mode]}
+
+NON-NEGOTIABLE RULES:
+1. Output ONLY a valid JSON array. No markdown, no backticks, no preamble, no trailing text.
+2. Exactly 4 options per question in the "options" array.
+3. correct_option_id is 0-indexed integer: 0=first option, 1=second, 2=third, 3=fourth.
+4. Every question must demand genuine analytical thinking — never simple recall or definition lookup.
+5. Use advanced framing: "which combination is correct", "what necessarily follows", "which is NOT true given that...", multi-condition logic.
+6. Explanation must state why the correct answer is right AND why each wrong option is incorrect.
+7. Questions must be answerable from the provided content only.
+
+STRICT OUTPUT FORMAT:
+[{"question_text":"...","options":["...","...","...","..."],"correct_option_id":0,"explanation":"..."}]`;
+}
+
+function extractJSON(raw) {
+  const m = raw.match(/\[[\s\S]*?\]/);
+  if(!m) throw new Error('No JSON array found. Raw start: '+raw.slice(0,200));
+  const clean = m[0]
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'')
+    .replace(/,(\s*[}\]])/g,'$1');
+  return JSON.parse(clean);
+}
+
+function isValidQ(q) {
+  return q && typeof q.question_text==='string' && q.question_text.trim().length>10
+      && Array.isArray(q.options) && q.options.length===4
+      && q.options.every(o=>typeof o==='string' && o.length>0)
+      && Number.isInteger(q.correct_option_id)
+      && q.correct_option_id>=0 && q.correct_option_id<=3
+      && typeof q.explanation==='string' && q.explanation.trim().length>10;
+}
+
+// ── MAIN GENERATE & SEND ──────────────────────────────────────────────────────
+$('btn-generate').addEventListener('click', async () => {
+  if(isRunning) return;
+  hideAlert();
+  const key   = $('nvidia-key').value.trim();
+  const model = $('nvidia-model').value;
+  const qpc   = parseInt($('q-per-chunk').value);
+  const mode  = $('difficulty').value;
+  const title = $('quiz-title').value.trim() || 'AI Generated Quiz';
+  const desc  = $('quiz-desc').value.trim()  || 'High difficulty MCQ';
+
+  if(!key)  { showAlert('Enter your NVIDIA API key first.','warn'); return; }
+  if(!allChunks.length){ showAlert('Upload a PDF first.','warn'); return; }
+
+  isRunning=true; generatedQuestions=[];
+  $('questions-container').innerHTML='';
+  $('results-section').classList.remove('show');
+  $('btn-generate').disabled=true;
+  $('btn-preview').disabled=true;
+  $('btn-download').disabled=true;
+  setStat('questions',0); setStat('status','⚙️');
+  showProgress(true); setProgress(0,'Starting...');
+
+  log('════════════════════════════════════','data');
+  log(`Chunks: ${allChunks.length} · Q/chunk: ${qpc} · Mode: ${mode}`,'ok');
+  log(`Model: ${model}`,'info');
+  log(`Title: "${title}"`,'info');
+  log('════════════════════════════════════','data');
+
+  const sys = buildSystem(mode);
+
+  for(let i=0;i<allChunks.length;i++){
+    const chunk=allChunks[i], num=i+1;
+    log(`── Chunk ${num}/${allChunks.length} (${chunk.length} chars) ──`,'data');
+    log(`Preview: "${chunk.slice(0,65).replace(/\n/g,' ')}..."`,'info');
+    setProgress((i/allChunks.length)*80, `AI ← chunk ${num}/${allChunks.length}`);
+
+    const user =
+      `Generate exactly ${qpc} high-difficulty MCQ questions from the content below.\n\n` +
+      `CONTENT:\n${chunk}\n\n` +
+      `Output ONLY a JSON array of ${qpc} objects. No markdown, no extra text.`;
+
+    let ok=false, attempts=0;
+    while(!ok && attempts<3){
+      attempts++;
+      try {
+        log(`Calling NVIDIA (attempt ${attempts}/3)...`,'ai');
+        const raw = await callNvidia(sys, user, key, model);
+        log(`Response: ${raw.length} chars`,'ai');
+        log(`Preview: ${raw.slice(0,120).replace(/\n/g,' ')}`,'data');
+
+        const parsed = extractJSON(raw);
+        log(`Parsed: ${parsed.length} object(s)`,'ai');
+        const valid = parsed.filter(q=>{ const v=isValidQ(q); if(!v) log(`Malformed Q skipped: "${String(q?.question_text||'?').slice(0,40)}"`,'warn'); return v; });
+        log(`Valid: ${valid.length}/${parsed.length}`, valid.length>0?'ok':'warn');
+        generatedQuestions.push(...valid);
+        setStat('questions', generatedQuestions.length);
+        ok=true;
+      } catch(err){
+        log(`Attempt ${attempts} error: ${err.name}: ${err.message}`,'error');
+        if(err.name==='TypeError'){
+          // CORS — no point retrying
+          showAlert(
+            `<strong>NVIDIA API CORS block detected.</strong><br/><br/>` +
+            `<code>integrate.api.nvidia.com</code> is rejecting browser requests from this host.<br/><br/>` +
+            `<strong>Fix options:</strong><br/>` +
+            `1. Open this HTML file directly: <code>file:///path/to/file.html</code><br/>` +
+            `2. Serve it from <code>localhost</code> (VS Code Live Server, Python http.server)<br/>` +
+            `3. Add a Cloudflare Worker that proxies NVIDIA requests<br/><br/>` +
+            `NVIDIA's API is designed for server-to-server use, not browser origin requests.`
+          );
+          finishRun(); return;
+        }
+        if(attempts<3){ log('Retrying in 2s...','warn'); await sleep(2000); }
+      }
+    }
+    if(!ok) log(`Chunk ${num} — 0 questions extracted.`,'warn');
+    else log(`Chunk ${num} done. Total: ${generatedQuestions.length}`,'ok');
+    if(i<allChunks.length-1){ log('Rate limit pause 1.5s...','info'); await sleep(1500); }
+  }
+
+  log('════════════════════════════════════','data');
+  log(`Generation done. Total questions: ${generatedQuestions.length}`,'ok');
+
+  if(generatedQuestions.length===0){
+    showAlert('<strong>No valid questions were generated.</strong><br/>Try a smaller chunk size, fewer questions/chunk, or check the PDF has readable text (not a scanned image).','warn');
+    finishRun(); return;
+  }
+
+  $('btn-download').disabled=false;
+  renderPreview();
+
+  // ── POST ──────────────────────────────────────────────────────────────────
+  const payload = { title, description:desc, questions:generatedQuestions };
+  const body    = JSON.stringify(payload);
+  log(`Payload size: ${body.length.toLocaleString()} chars`,'send');
+  log(`POST → ${BASE_URL}/pdf-quiz/add-quiz-json`,'send');
+  setProgress(90,'Sending to server...');
+
+  try {
+    const res = await fetch(`${BASE_URL}/pdf-quiz/add-quiz-json`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Accept':'application/json'
+      },
+      body
+    });
+    const resBody = await res.text();
+    log(`Server → HTTP ${res.status} ${res.statusText}`, res.ok?'ok':'error');
+    log(`Body: ${resBody.slice(0,400)}`, res.ok?'ok':'data');
+
+    if(res.ok){
+      setProgress(100,'Done!');
+      setStat('status','✅');
+      toast(`✅ Uploaded! ${generatedQuestions.length} questions sent.`,'success');
+      showAlert(
+        `Quiz <strong>"${esc(title)}"</strong> uploaded successfully!<br/>` +
+        `Questions: <strong>${generatedQuestions.length}</strong><br/>` +
+        `Server: <code>${esc(resBody.slice(0,200))}</code>`,'ok'
+      );
+    } else {
+      setStat('status','⚠️');
+      showAlert(
+        `<strong>Server returned HTTP ${res.status}</strong><br/>` +
+        `Body: <code>${esc(resBody.slice(0,300))}</code><br/><br/>` +
+        `Questions are generated — click <strong>Download JSON</strong> to save them locally.`,'warn'
+      );
+      toast(`Server error ${res.status} — download JSON instead`,'error');
+    }
+  } catch(err){
+    log(`Send failed: ${err.name}: ${err.message}`,'error');
+    setStat('status','⚠️');
+    showAlert(
+      `<strong>${err.name==='TypeError'?'CORS Error — Server blocked the request':'Network Error'}</strong><br/>` +
+      `<code>${esc(err.message)}</code><br/><br/>` +
+      (err.name==='TypeError'
+        ? `The server at <code>wisermedia0.onrender.com</code> must return CORS headers.<br/>` +
+          `Add to your Express app:<br/><code>app.use(require('cors')())</code><br/><br/>`
+        : '') +
+      `Your questions are safe — click <strong>⬇ Download JSON</strong> to get them.`
+    );
+    toast('CORS block — download JSON instead','error');
+  }
+
+  finishRun();
+});
+
+// ── DOWNLOAD FALLBACK ─────────────────────────────────────────────────────────
+$('btn-download').addEventListener('click',()=>{
+  if(!generatedQuestions.length){ toast('No questions yet.','error'); return; }
+  const title= $('quiz-title').value.trim()||'AI Generated Quiz';
+  const desc = $('quiz-desc').value.trim()||'High difficulty MCQ';
+  const data = JSON.stringify({title,description:desc,questions:generatedQuestions},null,2);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  a.download='quiz-payload.json';
+  a.click();
+  log('Saved quiz-payload.json locally.','ok');
+  toast('Downloaded quiz-payload.json ✓','success');
+});
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────────
+$('btn-preview').addEventListener('click', renderPreview);
+function renderPreview(){
+  if(!generatedQuestions.length) return;
+  const c=$('questions-container'); c.innerHTML='';
+  const L=['A','B','C','D'];
+  generatedQuestions.forEach((q,i)=>{
+    c.innerHTML+=`
+      <div class="q-card">
+        <div class="q-num">Q${i+1} of ${generatedQuestions.length}</div>
+        <div class="q-text">${esc(q.question_text)}</div>
+        <ul class="q-options">${q.options.map((o,j)=>`
+          <li class="q-opt${j===q.correct_option_id?' correct':''}">
+            <span class="q-opt-letter">${L[j]}.</span><span>${esc(o)}</span>
+          </li>`).join('')}</ul>
+        <div class="q-exp"><strong>Explanation:</strong> ${esc(q.explanation)}</div>
+      </div>`;
+  });
+  $('results-section').classList.add('show');
+  $('btn-preview').disabled=false;
+  $('results-section').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────────────────────
+$('btn-clear').addEventListener('click',()=>{
+  pdfText=''; allChunks=[]; generatedQuestions=[];
+  $('pdf-input').value='';
+  $('file-status').textContent='';
+  ['btn-generate','btn-preview','btn-download'].forEach(id=>$(id).disabled=true);
+  $('questions-container').innerHTML='';
+  $('results-section').classList.remove('show');
+  setStat('pages',0);setStat('chunks',0);setStat('questions',0);setStat('status','—');
+  showProgress(false); hideAlert();
+  log('Cleared. Upload a new PDF to start.','info');
+  toast('Cleared','info');
+});
+
+function finishRun(){
+  isRunning=false;
+  $('btn-generate').disabled=false;
+  if(generatedQuestions.length) $('btn-preview').disabled=false;
+  showProgress(false);
+}
+
+log('Ready. Tip: run diagnostics before processing a PDF.','ok');
+</script>
+</body>
+</html>
