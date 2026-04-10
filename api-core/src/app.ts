@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import path from 'node:path';
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
@@ -12,7 +13,8 @@ import { pdfQuizRoutes } from './routes/pdfQuizRoutes.js';
 
 export function buildApp() {
   const app = Fastify({ logger: true });
-
+  await app.register(cors, { origin: '*' });
+  
   app.register(multipart, {
     limits: {
       fileSize: 10 * 1024 * 1024,
