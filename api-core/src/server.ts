@@ -5,7 +5,7 @@ import { ensurePdfQuizTables } from './db/pdfQuizRepo.js';
 import { env } from './utils/env.js';
 
 async function startServer() {
-  const app = buildApp();
+  const app = await buildApp();
 
   try {
     await pool.query('SELECT 1');
