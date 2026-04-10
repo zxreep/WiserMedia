@@ -11,7 +11,7 @@ import { premiumRoutes } from './routes/premiumRoutes.js';
 import { webAppRoutes } from './routes/webAppRoutes.js';
 import { pdfQuizRoutes } from './routes/pdfQuizRoutes.js';
 
-export function buildApp() {
+export async function buildApp() {
   const app = Fastify({ logger: true });
   await app.register(cors, { origin: '*' });
   
