@@ -1,7 +1,7 @@
 import type { Bot, Context } from 'grammy';
 import { authUser } from '../api-client.js';
 import { mainMenuKeyboard } from '../keyboards/mainMenu.js';
-import { getSession, setSession } from '../bot.js';
+import { getSession, notifyAdmins, setSession } from '../bot.js';
 
 async function onboard(ctx: Context) {
   try {
@@ -17,12 +17,14 @@ async function onboard(ctx: Context) {
       first_name: from.first_name
     });
 
-    setSession(from.id, { user_id: profile.user_id, name: profile.name });
+    setSession(from.id, { user_id: profile.user_id, name: profile.name, role: profile.role });
 
     await ctx.reply("👋 Welcome to CUET Prep Bot!\nLet's crack CUET together 🚀", {
-      reply_markup: mainMenuKeyboard()
+      reply_markup: mainMenuKeyboard(profile.role)
     });
-  } catch {
+  } catch (error) {
+    console.error('/start error:', error);
+    await notifyAdmins(`🚨 /start failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
     await ctx.reply('⚠️ Something went wrong. Please try again.');
   }
 }
@@ -44,11 +46,13 @@ export function registerStartHandlers(bot: Bot) {
 
       const session = getSession(from.id);
       if (!session) {
-        setSession(from.id, { user_id: profile.user_id, name: profile.name });
+        setSession(from.id, { user_id: profile.user_id, name: profile.name, role: profile.role });
       }
 
       await ctx.reply(`📊 My Progress\n\nName: ${profile.name}\nXP: ${profile.xp}\nRole: ${profile.role}`);
-    } catch {
+    } catch (error) {
+      console.error('my_progress error:', error);
+      await notifyAdmins(`🚨 my_progress failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
       await ctx.reply('⚠️ Something went wrong. Please try again.');
     }
   });

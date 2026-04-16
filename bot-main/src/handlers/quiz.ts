@@ -1,10 +1,10 @@
 import type { Bot } from 'grammy';
 import { InlineKeyboard } from 'grammy';
 import { getQuizzes, startQuiz, submitWebAppQuiz } from '../api-client.js';
-import { getSession } from '../bot.js';
+import { getSession, notifyAdmins } from '../bot.js';
 import { config } from '../config.js';
 import { emptyQuizKeyboard } from '../keyboards/mainMenu.js';
-import { quizLaunchKeyboard } from '../keyboards/quiz.js';
+import { adminQuizActionsKeyboard } from '../keyboards/quiz.js';
 
 function buildQuizWebAppUrl(baseUrl: string, payload: { attemptId: number; quizId: number; userId: number; telegramId: number }): string {
   const url = new URL(baseUrl);
@@ -17,8 +17,32 @@ function buildQuizWebAppUrl(baseUrl: string, payload: { attemptId: number; quizI
 
 const hostedQuizBaseUrl = `${config.publicBaseUrl}/quiz`;
 
+function isAdmin(role: string): boolean {
+  return role.toLowerCase() === 'admin';
+}
+
+function buildShareUrl(message: string, webAppUrl: string): string {
+  const url = new URL('https://t.me/share/url');
+  url.searchParams.set('url', webAppUrl);
+  url.searchParams.set('text', message);
+  return url.toString();
+}
+
+function buildQuizIntroMessage(quiz: { title: string; description: string; duration_minutes: number; question_count: number }, webAppUrl: string): string {
+  return [
+    `🧠 *${quiz.title}*`,
+    '',
+    `${quiz.description || 'Test your preparation with this quiz.'}`,
+    '',
+    `• Questions: *${quiz.question_count}*`,
+    `• Duration: *${quiz.duration_minutes} mins*`,
+    '',
+    `🔗 Start quiz in WebApp: ${webAppUrl}`
+  ].join('\n');
+}
+
 export function registerQuizHandlers(bot: Bot) {
-  bot.callbackQuery(['start_quiz', 'refresh_quizzes'], async (ctx) => {
+  bot.callbackQuery(['admin_view_quizzes', 'refresh_quizzes'], async (ctx) => {
     try {
       await ctx.answerCallbackQuery();
 
@@ -39,16 +63,29 @@ export function registerQuizHandlers(bot: Bot) {
         return;
       }
 
+      if (!isAdmin(session.role)) {
+        await ctx.reply('⛔ This section is only for admins.');
+        return;
+      }
+
+      await notifyAdmins(
+        `🛠️ Admin panel opened\nAdmin: ${from.id}\nAvailable quiz IDs: ${quizzes
+          .map((quiz) => `${String(quiz.id)}(${typeof quiz.id})`)
+          .join(', ')}`
+      );
+
       const keyboard = new InlineKeyboard();
       quizzes.forEach((quiz, index) => {
         keyboard.text(`📝 ${quiz.title}`, `open_quiz_${quiz.id}`);
         if (index !== quizzes.length - 1) keyboard.row();
       });
 
-      await ctx.reply('🌐 Launch your quiz in web mode.\n\nChoose a quiz below:', {
+      await ctx.reply('🛠️ Admin Quiz Panel\n\nSelect a quiz to preview and share:', {
         reply_markup: keyboard
       });
-    } catch {
+    } catch (error) {
+      console.error('admin_view_quizzes error:', error);
+      await notifyAdmins(`🚨 admin_view_quizzes failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
       await ctx.reply('⚠️ Something went wrong. Please try again.');
     }
   });
@@ -64,7 +101,21 @@ export function registerQuizHandlers(bot: Bot) {
         return;
       }
 
+      if (!isAdmin(session.role)) {
+        await ctx.reply('⛔ Only admins can view and share all quizzes.');
+        return;
+      }
+
       const quizId = Number(ctx.match[1]);
+      const quizzes = await getQuizzes();
+      const selectedQuiz = quizzes.find((quiz) => Number(quiz.id) === quizId);
+
+      await notifyAdmins(
+        `🧪 Admin selected quiz\nAdmin: ${from.id}\nCallback quizId: ${ctx.match[1]}\nParsed quizId: ${quizId}\nMatched: ${selectedQuiz ? 'yes' : 'no'}\nFetched IDs: ${quizzes
+          .map((quiz) => `${String(quiz.id)}(${typeof quiz.id})`)
+          .join(', ')}`
+      );
+
       const started = await startQuiz(quizId, session.user_id);
       const webAppUrl = buildQuizWebAppUrl(hostedQuizBaseUrl, {
         attemptId: started.attempt_id,
@@ -73,10 +124,27 @@ export function registerQuizHandlers(bot: Bot) {
         telegramId: from.id
       });
 
-      await ctx.reply('🚀 Your quiz attempt is ready. Open it inside Telegram:', {
-        reply_markup: quizLaunchKeyboard(webAppUrl)
+      const message = buildQuizIntroMessage(
+        selectedQuiz ?? {
+          title: `Quiz #${quizId}`,
+          description: 'Test your preparation with this quiz.',
+          duration_minutes: Math.ceil(started.questions.length),
+          question_count: started.questions.length
+        },
+        webAppUrl
+      );
+      const shareUrl = buildShareUrl(
+        `${selectedQuiz?.title ?? `Quiz #${quizId}`}\n\n${selectedQuiz?.description || 'Test your preparation with this quiz.'}`,
+        webAppUrl
+      );
+
+      await ctx.reply(message, {
+        parse_mode: 'Markdown',
+        reply_markup: adminQuizActionsKeyboard(webAppUrl, shareUrl)
       });
-    } catch {
+    } catch (error) {
+      console.error('open_quiz error:', error);
+      await notifyAdmins(`🚨 open_quiz failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
       await ctx.reply('⚠️ Something went wrong. Please try again.');
     }
   });
@@ -128,7 +196,9 @@ export function registerQuizHandlers(bot: Bot) {
           wrongLines ? `\n\n❌ Wrongly attempted:\n${wrongLines}` : ''
         }`
       );
-    } catch {
+    } catch (error) {
+      console.error('message:web_app_data error:', error);
+      await notifyAdmins(`🚨 web_app_data failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
       await ctx.reply('⚠️ Something went wrong while submitting your quiz.');
     }
   });
