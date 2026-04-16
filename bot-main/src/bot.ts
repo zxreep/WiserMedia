@@ -20,6 +20,7 @@ export type LocalQuizState = {
 export type UserState = {
   user_id: number;
   name: string;
+  role: string;
   quiz_state?: LocalQuizState;
 };
 
@@ -41,6 +42,29 @@ export function clearQuizState(telegramId: number): void {
 }
 
 const bot = new Bot(config.botToken);
+let botUsername = '';
+
+export function getBotUsername(): string {
+  return botUsername;
+}
+
+async function sendAdminNotification(message: string): Promise<void> {
+  if (config.adminTelegramIds.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    config.adminTelegramIds.map(async (adminId) => {
+      try {
+        await bot.api.sendMessage(adminId, message);
+      } catch (error) {
+        console.error(`Failed to notify admin ${adminId}:`, error);
+      }
+    })
+  );
+}
+
+export const notifyAdmins = sendAdminNotification;
 
 registerStartHandlers(bot);
 registerQuizHandlers(bot);
@@ -49,6 +73,14 @@ registerMentorshipHandlers(bot);
 
 bot.catch(async (error) => {
   console.error('Bot error:', error.error);
+  await notifyAdmins(
+    [
+      '🚨 Bot error captured',
+      `Update ID: ${error.ctx.update.update_id}`,
+      `User: ${error.ctx.from?.id ?? 'unknown'}`,
+      `Error: ${String(error.error)}`
+    ].join('\n')
+  );
   try {
     await error.ctx.reply('⚠️ Something went wrong. Please try again.');
   } catch {
@@ -63,6 +95,8 @@ async function bootstrap() {
   const quizHtmlPath = path.resolve(__dirname, '../../nta-mock-test.html');
 
   await bot.api.setWebhook(config.webhookUrl);
+  const me = await bot.api.getMe();
+  botUsername = me.username;
 
   server.post('/telegram/webhook', webhookCallback(bot, 'fastify'));
   server.get('/quiz', async (request, reply) => {

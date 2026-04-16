@@ -60,7 +60,8 @@ export async function buildApp() {
       'quiz not found',
       'no questions generated',
       'invalid quiz payload',
-      'invalid router payload'
+      'invalid router payload',
+      'invalid share log payload'
     ]);
 
     if (exact400Errors.has(errorMessage)) {

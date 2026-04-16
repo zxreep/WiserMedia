@@ -39,6 +39,7 @@ Required variables:
 - `BOT_TOKEN`
 - `API_BASE_URL`
 - `WEBHOOK_URL` (must be full URL ending with `/telegram/webhook`)
+- `ADMIN_TELEGRAM_IDS` (optional, comma-separated Telegram user IDs for error/admin event logs)
 - `PORT` (optional, default `3001`)
 
 ## Local run

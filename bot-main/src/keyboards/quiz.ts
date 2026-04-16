@@ -7,3 +7,7 @@ export function quizSelectKeyboard(quizId: number, title: string) {
 export function quizLaunchKeyboard(webAppUrl: string) {
   return new InlineKeyboard().webApp('Start Quiz 🚀', webAppUrl);
 }
+
+export function adminQuizActionsKeyboard(webAppUrl: string, shareQuery: string) {
+  return new InlineKeyboard().webApp('Start Quiz 🚀', webAppUrl).switchInline('📤 Share to Chat', shareQuery);
+}
