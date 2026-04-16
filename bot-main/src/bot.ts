@@ -43,6 +43,22 @@ export function clearQuizState(telegramId: number): void {
 
 const bot = new Bot(config.botToken);
 
+export async function notifyAdmins(message: string): Promise<void> {
+  if (config.adminTelegramIds.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    config.adminTelegramIds.map(async (adminId) => {
+      try {
+        await bot.api.sendMessage(adminId, message);
+      } catch (error) {
+        console.error(`Failed to notify admin ${adminId}:`, error);
+      }
+    })
+  );
+}
+
 registerStartHandlers(bot);
 registerQuizHandlers(bot);
 registerLeaderboardHandlers(bot);
@@ -50,6 +66,14 @@ registerMentorshipHandlers(bot);
 
 bot.catch(async (error) => {
   console.error('Bot error:', error.error);
+  await notifyAdmins(
+    [
+      '🚨 Bot error captured',
+      `Update ID: ${error.ctx.update.update_id}`,
+      `User: ${error.ctx.from?.id ?? 'unknown'}`,
+      `Error: ${String(error.error)}`
+    ].join('\n')
+  );
   try {
     await error.ctx.reply('⚠️ Something went wrong. Please try again.');
   } catch {

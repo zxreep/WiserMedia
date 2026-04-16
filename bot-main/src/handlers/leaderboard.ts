@@ -1,6 +1,6 @@
 import type { Bot } from 'grammy';
 import { getLeaderboard } from '../api-client.js';
-import { getSession } from '../bot.js';
+import { getSession, notifyAdmins } from '../bot.js';
 
 export function registerLeaderboardHandlers(bot: Bot) {
   bot.callbackQuery('show_leaderboard', async (ctx) => {
@@ -18,7 +18,9 @@ export function registerLeaderboardHandlers(bot: Bot) {
       });
 
       await ctx.reply(lines.join('\n'));
-    } catch {
+    } catch (error) {
+      console.error('show_leaderboard error:', error);
+      await notifyAdmins(`🚨 show_leaderboard failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
       await ctx.reply('⚠️ Something went wrong. Please try again.');
     }
   });
