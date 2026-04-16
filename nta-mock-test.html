@@ -771,6 +771,11 @@ let quizMeta = {
   duration: defaultQuestions.length * 60
 };
 
+function computeDurationSeconds(questionCount) {
+  const count = Number.isFinite(Number(questionCount)) ? Number(questionCount) : 0;
+  return Math.max(0, count) * 60;
+}
+
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
@@ -786,9 +791,10 @@ function initState() {
     current: 0,
     answers: Array(TOTAL).fill(null),
     status: Array(TOTAL).fill(STATUS.NOT_VISITED),
-    timerSec: quizMeta.duration || TOTAL * 60,
+    timerSec: computeDurationSeconds(TOTAL),
     timerInterval: null,
-    submitted: false
+    submitted: false,
+    submitting: false
   };
 }
 
@@ -814,7 +820,11 @@ function startTimer() {
     el.textContent = formatTime(Math.max(0, state.timerSec));
     if (state.timerSec <= 300) el.className = 'timer-box warning';
     if (state.timerSec <= 60) el.className = 'timer-box danger';
-    if (state.timerSec <= 0) { clearInterval(state.timerInterval); submitTest(); }
+    if (state.timerSec <= 0) {
+      clearInterval(state.timerInterval);
+      state.timerSec = 0;
+      submitTest({ trigger: 'timeout' });
+    }
   }, 1000);
 }
 
@@ -962,16 +972,18 @@ function closeModal() {
   document.getElementById('submitModal').classList.remove('show');
 }
 
-async function submitTest() {
+async function submitTest({ trigger = 'manual' } = {}) {
+  if (state.submitting || state.submitted) return;
+  state.submitting = true;
   clearInterval(state.timerInterval);
   closeModal();
-  state.submitted = true;
 
   let correct = 0, wrong = 0;
   const answeredCount = state.answers.filter((a) => a !== null).length;
   const skipped = TOTAL - answeredCount;
   const score = 0;
   const pct = 0;
+  let shouldSendTelegramPayload = trigger === 'manual';
 
   // Hide test UI
   document.getElementById('mainLayout').style.display = 'none';
@@ -1002,11 +1014,17 @@ async function submitTest() {
       });
       const submitted = await response.json();
       if (submitted?.success && submitted?.data) {
-        correct = submitted.data.correct;
-        wrong = submitted.data.total - submitted.data.correct;
+        const total = Number(submitted.data.total ?? 0);
+        correct = Number(submitted.data.correct ?? 0);
+        wrong = Array.isArray(submitted.data.wrong_questions)
+          ? submitted.data.wrong_questions.length
+          : Math.max(0, total - correct);
+        const skippedFromServer = Math.max(0, total - correct - wrong);
+        state.submitted = true;
         document.getElementById('scoreDisplay').textContent = submitted.data.score;
         document.getElementById('scoreRing').style.setProperty('--pct', `${Math.max(0, Math.round(submitted.data.score))}%`);
         payload.result = submitted.data;
+        shouldSendTelegramPayload = trigger === 'manual';
         const wrongReview = document.getElementById('wrongReview');
         if (Array.isArray(submitted.data.wrong_questions) && submitted.data.wrong_questions.length) {
           wrongReview.style.display = 'block';
@@ -1024,29 +1042,46 @@ async function submitTest() {
           wrongReview.style.display = 'none';
           wrongReview.innerHTML = '';
         }
+
+        document.getElementById('resultStats').innerHTML = `
+          <div class="result-stat green"><span class="val">${correct}</span><span class="lbl">Correct</span></div>
+          <div class="result-stat red"><span class="val">${wrong}</span><span class="lbl">Wrong</span></div>
+          <div class="result-stat blue"><span class="val">${skippedFromServer}</span><span class="lbl">Skipped</span></div>
+        `;
+        if (tg && shouldSendTelegramPayload) {
+          tg.sendData(JSON.stringify(payload));
+        }
+        state.submitting = false;
+        return;
       }
+
+      shouldSendTelegramPayload = true;
     } catch (_error) {
       // fallback to basic attempted stats only
+      shouldSendTelegramPayload = true;
     }
   }
 
+  state.submitted = true;
   document.getElementById('resultStats').innerHTML = `
     <div class="result-stat green"><span class="val">${correct}</span><span class="lbl">Correct</span></div>
     <div class="result-stat red"><span class="val">${wrong}</span><span class="lbl">Wrong</span></div>
     <div class="result-stat blue"><span class="val">${skipped}</span><span class="lbl">Skipped</span></div>
   `;
 
-  if (tg) {
+  if (tg && shouldSendTelegramPayload) {
     tg.sendData(JSON.stringify(payload));
   }
+  state.submitting = false;
 }
 
 function restartTest() {
   state.current = 0;
   state.answers = Array(TOTAL).fill(null);
   state.status = Array(TOTAL).fill(STATUS.NOT_VISITED);
-  state.timerSec = quizMeta.duration || TOTAL * 60;
+  state.timerSec = computeDurationSeconds(TOTAL);
   state.submitted = false;
+  state.submitting = false;
 
   document.getElementById('mainLayout').style.display = 'flex';
   document.getElementById('actionBar').style.display = 'flex';
@@ -1088,7 +1123,7 @@ async function loadQuizData() {
     quizMeta = {
       attemptId: injected.attempt_id,
       title: injected.title ?? quizMeta.title,
-      duration: Number(injected.duration ?? (injected.questions.length * 60))
+      duration: computeDurationSeconds(injected.questions.length)
     };
     return;
   }
@@ -1108,7 +1143,7 @@ async function loadQuizData() {
     quizMeta = {
       attemptId: payload.data.attempt_id,
       title: payload.data.title ?? quizMeta.title,
-      duration: Number(payload.data.duration ?? (payload.data.questions.length * 60))
+      duration: computeDurationSeconds(payload.data.questions.length)
     };
   } else {
     throw new Error('Quiz data not found');
