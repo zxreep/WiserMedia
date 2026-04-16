@@ -100,12 +100,7 @@ export function registerQuizHandlers(bot: Bot) {
 
       const quizId = Number(ctx.match[1]);
       const quizzes = await getQuizzes();
-      const selectedQuiz = quizzes.find((quiz) => quiz.id === quizId);
-
-      if (!selectedQuiz) {
-        await ctx.reply('⚠️ Quiz not found. Please refresh and try again.');
-        return;
-      }
+      const selectedQuiz = quizzes.find((quiz) => Number(quiz.id) === quizId);
 
       const started = await startQuiz(quizId, session.user_id);
       const webAppUrl = buildQuizWebAppUrl(hostedQuizBaseUrl, {
@@ -115,9 +110,17 @@ export function registerQuizHandlers(bot: Bot) {
         telegramId: from.id
       });
 
-      const message = buildQuizIntroMessage(selectedQuiz, webAppUrl);
+      const message = buildQuizIntroMessage(
+        selectedQuiz ?? {
+          title: `Quiz #${quizId}`,
+          description: 'Test your preparation with this quiz.',
+          duration_minutes: Math.ceil(started.questions.length),
+          question_count: started.questions.length
+        },
+        webAppUrl
+      );
       const shareUrl = buildShareUrl(
-        `${selectedQuiz.title}\n\n${selectedQuiz.description || 'Test your preparation with this quiz.'}`,
+        `${selectedQuiz?.title ?? `Quiz #${quizId}`}\n\n${selectedQuiz?.description || 'Test your preparation with this quiz.'}`,
         webAppUrl
       );
 
