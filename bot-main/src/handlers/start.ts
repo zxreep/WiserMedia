@@ -17,10 +17,10 @@ async function onboard(ctx: Context) {
       first_name: from.first_name
     });
 
-    setSession(from.id, { user_id: profile.user_id, name: profile.name });
+    setSession(from.id, { user_id: profile.user_id, name: profile.name, role: profile.role });
 
     await ctx.reply("👋 Welcome to CUET Prep Bot!\nLet's crack CUET together 🚀", {
-      reply_markup: mainMenuKeyboard()
+      reply_markup: mainMenuKeyboard(profile.role)
     });
   } catch {
     await ctx.reply('⚠️ Something went wrong. Please try again.');
@@ -44,7 +44,7 @@ export function registerStartHandlers(bot: Bot) {
 
       const session = getSession(from.id);
       if (!session) {
-        setSession(from.id, { user_id: profile.user_id, name: profile.name });
+        setSession(from.id, { user_id: profile.user_id, name: profile.name, role: profile.role });
       }
 
       await ctx.reply(`📊 My Progress\n\nName: ${profile.name}\nXP: ${profile.xp}\nRole: ${profile.role}`);
