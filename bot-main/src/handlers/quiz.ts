@@ -30,12 +30,12 @@ function buildShareUrl(message: string, webAppUrl: string): string {
 
 function buildQuizIntroMessage(quiz: { title: string; description: string; duration_minutes: number; question_count: number }, webAppUrl: string): string {
   return [
-    `🧠 *${quiz.title}*`,
+    `🧠 ${quiz.title}`,
     '',
     `${quiz.description || 'Test your preparation with this quiz.'}`,
     '',
-    `• Questions: *${quiz.question_count}*`,
-    `• Duration: *${quiz.duration_minutes} mins*`,
+    `• Questions: ${quiz.question_count}`,
+    `• Duration: ${quiz.duration_minutes} mins`,
     '',
     `🔗 Start quiz in WebApp: ${webAppUrl}`
   ].join('\n');
@@ -139,7 +139,6 @@ export function registerQuizHandlers(bot: Bot) {
       );
 
       await ctx.reply(message, {
-        parse_mode: 'Markdown',
         reply_markup: adminQuizActionsKeyboard(webAppUrl, shareUrl)
       });
     } catch (error) {
