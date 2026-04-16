@@ -20,6 +20,7 @@ export type LocalQuizState = {
 export type UserState = {
   user_id: number;
   name: string;
+  role: string;
   quiz_state?: LocalQuizState;
 };
 
