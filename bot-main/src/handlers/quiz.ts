@@ -1,7 +1,7 @@
 import type { Bot } from 'grammy';
 import { InlineKeyboard } from 'grammy';
-import { getQuizzes, startQuiz, submitWebAppQuiz } from '../api-client.js';
-import { getSession, notifyAdmins } from '../bot.js';
+import { authUser, getQuizzes, logQuizShare, startQuiz, submitWebAppQuiz } from '../api-client.js';
+import { getBotUsername, getSession, notifyAdmins, setSession } from '../bot.js';
 import { config } from '../config.js';
 import { emptyQuizKeyboard } from '../keyboards/mainMenu.js';
 import { adminQuizActionsKeyboard } from '../keyboards/quiz.js';
@@ -21,11 +21,21 @@ function isAdmin(role: string): boolean {
   return role.toLowerCase() === 'admin';
 }
 
-function buildShareUrl(message: string, webAppUrl: string): string {
-  const url = new URL('https://t.me/share/url');
-  url.searchParams.set('url', webAppUrl);
-  url.searchParams.set('text', message);
-  return url.toString();
+function buildBotDeepLink(startPayload: string): string {
+  return `https://t.me/${getBotUsername()}?start=${encodeURIComponent(startPayload)}`;
+}
+
+function buildInlineResultId(quizId: number, sharedByTelegramId: number): string {
+  return `sharequiz:${quizId}:${sharedByTelegramId}:${Date.now()}`;
+}
+
+function parseInlineResultId(resultId: string): { quizId: number; sharedByTelegramId: number } | null {
+  const match = /^sharequiz:(\d+):(\d+):\d+$/.exec(resultId);
+  if (!match) return null;
+  return {
+    quizId: Number(match[1]),
+    sharedByTelegramId: Number(match[2])
+  };
 }
 
 function buildQuizIntroMessage(quiz: { title: string; description: string; duration_minutes: number; question_count: number }, webAppUrl: string): string {
@@ -39,6 +49,27 @@ function buildQuizIntroMessage(quiz: { title: string; description: string; durat
     '',
     `🔗 Start quiz in WebApp: ${webAppUrl}`
   ].join('\n');
+}
+
+function buildShareCardText(quiz: { title: string; question_count: number }): string {
+  return [`📢 <b>New Quiz Challenge</b>`, '', `🧠 ${quiz.title}`, `❓ Questions: ${quiz.question_count}`].join('\n');
+}
+
+async function ensureSession(botUser: { id: number; username?: string; first_name?: string }) {
+  const existing = getSession(botUser.id);
+  if (existing) {
+    return existing;
+  }
+
+  const profile = await authUser({
+    telegram_id: String(botUser.id),
+    username: botUser.username,
+    first_name: botUser.first_name
+  });
+
+  const created = { user_id: profile.user_id, name: profile.name, role: profile.role };
+  setSession(botUser.id, created);
+  return created;
 }
 
 export function registerQuizHandlers(bot: Bot) {
@@ -133,18 +164,87 @@ export function registerQuizHandlers(bot: Bot) {
         },
         webAppUrl
       );
-      const shareUrl = buildShareUrl(
-        `${selectedQuiz?.title ?? `Quiz #${quizId}`}\n\n${selectedQuiz?.description || 'Test your preparation with this quiz.'}`,
-        webAppUrl
-      );
+      const shareQuery = `share_quiz_${quizId}`;
 
       await ctx.reply(message, {
-        reply_markup: adminQuizActionsKeyboard(webAppUrl, shareUrl)
+        reply_markup: adminQuizActionsKeyboard(webAppUrl, shareQuery)
       });
     } catch (error) {
       console.error('open_quiz error:', error);
       await notifyAdmins(`🚨 open_quiz failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
       await ctx.reply('⚠️ Something went wrong. Please try again.');
+    }
+  });
+
+  bot.inlineQuery(/^share_quiz_(\d+)$/, async (ctx) => {
+    try {
+      const session = await ensureSession(ctx.from);
+      if (!isAdmin(session.role)) {
+        await ctx.answerInlineQuery([], { cache_time: 0, is_personal: true });
+        return;
+      }
+
+      const quizId = Number(ctx.match[1]);
+      const quizzes = await getQuizzes();
+      const quiz = quizzes.find((item) => Number(item.id) === quizId);
+      if (!quiz) {
+        await ctx.answerInlineQuery([], { cache_time: 0, is_personal: true });
+        return;
+      }
+
+      const startQuizLink = buildBotDeepLink(`quiz_${quizId}`);
+      const leaderboardLink = buildBotDeepLink('leaderboard');
+      const resultId = buildInlineResultId(quizId, ctx.from.id);
+
+      await ctx.answerInlineQuery(
+        [
+          {
+            type: 'article',
+            id: resultId,
+            title: `📢 Share quiz: ${quiz.title}`,
+            description: `${quiz.question_count} questions`,
+            input_message_content: {
+              message_text: buildShareCardText({ title: quiz.title, question_count: quiz.question_count }),
+              parse_mode: 'HTML'
+            },
+            reply_markup: new InlineKeyboard().url('Start Quiz 🚀', startQuizLink).url('🏆 Leaderboard', leaderboardLink)
+          }
+        ],
+        { cache_time: 0, is_personal: true }
+      );
+    } catch (error) {
+      console.error('inline share_quiz error:', error);
+      await notifyAdmins(`🚨 inline share_quiz failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
+      await ctx.answerInlineQuery([], { cache_time: 0, is_personal: true });
+    }
+  });
+
+  bot.on('chosen_inline_result', async (ctx) => {
+    try {
+      const session = await ensureSession(ctx.from);
+      if (!isAdmin(session.role)) {
+        return;
+      }
+
+      const parsed = parseInlineResultId(ctx.chosenInlineResult.result_id);
+      if (!parsed) {
+        return;
+      }
+
+      await logQuizShare({
+        quiz_id: parsed.quizId,
+        shared_by_user_id: session.user_id,
+        shared_by_telegram_id: String(ctx.from.id),
+        inline_message_id: ctx.chosenInlineResult.inline_message_id,
+        result_id: ctx.chosenInlineResult.result_id
+      });
+
+      await notifyAdmins(
+        `✅ Quiz shared\nAdmin: ${ctx.from.id}\nQuiz: ${parsed.quizId}\nInline message: ${ctx.chosenInlineResult.inline_message_id ?? 'n/a'}`
+      );
+    } catch (error) {
+      console.error('chosen_inline_result error:', error);
+      await notifyAdmins(`🚨 chosen_inline_result failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
     }
   });
 

@@ -301,3 +301,19 @@ export async function submitWebAppQuiz(attemptId: number, answers: SubmitAnswer[
 
   return submitQuiz(attempt.rows[0].quiz_id, attemptId, answers);
 }
+
+export async function logQuizShare(input: {
+  quiz_id: number;
+  shared_by_user_id?: number;
+  shared_by_telegram_id: string;
+  inline_message_id?: string;
+  result_id?: string;
+}) {
+  await dbQuery(
+    `INSERT INTO quiz_share_logs (quiz_id, shared_by_user_id, shared_by_telegram_id, inline_message_id, result_id)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [input.quiz_id, input.shared_by_user_id ?? null, input.shared_by_telegram_id, input.inline_message_id ?? null, input.result_id ?? null]
+  );
+
+  return { logged: true };
+}

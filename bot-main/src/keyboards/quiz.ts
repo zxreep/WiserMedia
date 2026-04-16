@@ -8,6 +8,6 @@ export function quizLaunchKeyboard(webAppUrl: string) {
   return new InlineKeyboard().webApp('Start Quiz 🚀', webAppUrl);
 }
 
-export function adminQuizActionsKeyboard(webAppUrl: string, shareUrl: string) {
-  return new InlineKeyboard().webApp('Start Quiz 🚀', webAppUrl).url('📤 Share to Chat', shareUrl);
+export function adminQuizActionsKeyboard(webAppUrl: string, shareQuery: string) {
+  return new InlineKeyboard().webApp('Start Quiz 🚀', webAppUrl).switchInline('📤 Share to Chat', shareQuery);
 }

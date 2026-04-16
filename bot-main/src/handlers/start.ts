@@ -1,7 +1,60 @@
 import type { Bot, Context } from 'grammy';
-import { authUser } from '../api-client.js';
-import { mainMenuKeyboard } from '../keyboards/mainMenu.js';
+import { authUser, getLeaderboard, getQuizzes, startQuiz } from '../api-client.js';
 import { getSession, notifyAdmins, setSession } from '../bot.js';
+import { config } from '../config.js';
+import { mainMenuKeyboard } from '../keyboards/mainMenu.js';
+import { quizLaunchKeyboard } from '../keyboards/quiz.js';
+
+function buildQuizWebAppUrl(baseUrl: string, payload: { attemptId: number; quizId: number; userId: number; telegramId: number }): string {
+  const url = new URL(baseUrl);
+  url.searchParams.set('attempt_id', String(payload.attemptId));
+  url.searchParams.set('quizId', String(payload.quizId));
+  url.searchParams.set('userId', String(payload.userId));
+  url.searchParams.set('telegramId', String(payload.telegramId));
+  return url.toString();
+}
+
+const hostedQuizBaseUrl = `${config.publicBaseUrl}/quiz`;
+
+async function handleDeepLink(ctx: Context, payload: string, profile: { user_id: number }) {
+  if (payload === 'leaderboard') {
+    const leaderboard = await getLeaderboard();
+    const lines = ['🏆 Top Students', ''];
+    leaderboard.users.slice(0, 10).forEach((u, idx) => {
+      lines.push(`${idx + 1}. ${u.name} — ${u.xp} XP`);
+    });
+    await ctx.reply(lines.join('\n'));
+    return;
+  }
+
+  const quizMatch = /^quiz_(\d+)$/.exec(payload);
+  if (!quizMatch) {
+    return;
+  }
+
+  const from = ctx.from;
+  if (!from) return;
+
+  const quizId = Number(quizMatch[1]);
+  const quizzes = await getQuizzes();
+  const selectedQuiz = quizzes.find((quiz) => Number(quiz.id) === quizId);
+  if (!selectedQuiz) {
+    await ctx.reply('⚠️ This quiz is unavailable right now.');
+    return;
+  }
+
+  const started = await startQuiz(quizId, profile.user_id);
+  const webAppUrl = buildQuizWebAppUrl(hostedQuizBaseUrl, {
+    attemptId: started.attempt_id,
+    quizId,
+    userId: profile.user_id,
+    telegramId: from.id
+  });
+
+  await ctx.reply(`🧠 ${selectedQuiz.title}\n❓ Questions: ${selectedQuiz.question_count}`, {
+    reply_markup: quizLaunchKeyboard(webAppUrl)
+  });
+}
 
 async function onboard(ctx: Context) {
   try {
@@ -22,6 +75,11 @@ async function onboard(ctx: Context) {
     await ctx.reply("👋 Welcome to CUET Prep Bot!\nLet's crack CUET together 🚀", {
       reply_markup: mainMenuKeyboard(profile.role)
     });
+
+    const payload = typeof ctx.match === 'string' ? ctx.match.trim() : '';
+    if (payload) {
+      await handleDeepLink(ctx, payload, { user_id: profile.user_id });
+    }
   } catch (error) {
     console.error('/start error:', error);
     await notifyAdmins(`🚨 /start failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);

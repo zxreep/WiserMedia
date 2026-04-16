@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  logQuizShareController,
   listQuizzesController,
   startQuizController,
   submitQuizController
@@ -9,4 +10,5 @@ export async function quizRoutes(app: FastifyInstance) {
   app.get('/', listQuizzesController);
   app.post('/:id/start', startQuizController);
   app.post('/:id/submit', submitQuizController);
+  app.post('/shares', logQuizShareController);
 }
