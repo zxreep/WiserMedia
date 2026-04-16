@@ -284,7 +284,7 @@ export async function getWebAppQuiz(attemptId: number) {
     attempt_id: attemptId,
     quiz_id: attempt.rows[0].quiz_id,
     title: attempt.rows[0].title,
-    duration: attempt.rows[0].duration_minutes * 60,
+    duration: questions.rows.length * 60,
     questions: questions.rows.map((q) => ({
       id: q.id,
       question: q.question_text,
