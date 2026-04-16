@@ -1,12 +1,13 @@
 import { InlineKeyboard } from 'grammy';
 
-export function mainMenuKeyboard() {
-  return new InlineKeyboard()
-    .text('🎯 Start Quiz', 'start_quiz')
-    .text('📊 My Progress', 'my_progress')
-    .row()
-    .text('🏆 Leaderboard', 'show_leaderboard')
-    .text('🤝 Find Mentor', 'find_mentor');
+export function mainMenuKeyboard(role: string) {
+  const keyboard = new InlineKeyboard().text('📊 My Progress', 'my_progress').text('🏆 Leaderboard', 'show_leaderboard');
+
+  if (role.toLowerCase() === 'admin') {
+    keyboard.row().text('🛠️ View All Quizzes', 'admin_view_quizzes');
+  }
+
+  return keyboard;
 }
 
 export function emptyQuizKeyboard() {
