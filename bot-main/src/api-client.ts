@@ -13,7 +13,7 @@ export type AuthUser = {
 };
 
 export type Quiz = {
-  id: number;
+  id: number | string;
   title: string;
   description: string;
   duration_minutes: number;
@@ -108,5 +108,16 @@ export async function requestMentorship(userId: number) {
   const response = await api.post<ApiEnvelope<{ id: number; mentor_user_id: number | null }>>('/mentorship/requests', {
     user_id: userId
   });
+  return unwrap(response.data);
+}
+
+export async function logQuizShare(input: {
+  quiz_id: number;
+  shared_by_user_id?: number;
+  shared_by_telegram_id: string;
+  inline_message_id?: string;
+  result_id?: string;
+}) {
+  const response = await api.post<ApiEnvelope<{ logged: boolean }>>('/quizzes/shares', input);
   return unwrap(response.data);
 }

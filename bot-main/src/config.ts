@@ -18,5 +18,9 @@ export const config = {
   apiBaseUrl: process.env.API_BASE_URL as string,
   webhookUrl,
   publicBaseUrl,
-  port: Number(process.env.PORT ?? 3001)
+  port: Number(process.env.PORT ?? 3001),
+  adminTelegramIds: (process.env.ADMIN_TELEGRAM_IDS ?? '')
+    .split(',')
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isInteger(value) && value > 0)
 };

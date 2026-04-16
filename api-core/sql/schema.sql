@@ -102,7 +102,18 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS quiz_share_logs (
+  id BIGSERIAL PRIMARY KEY,
+  quiz_id BIGINT NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  shared_by_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  shared_by_telegram_id TEXT NOT NULL,
+  inline_message_id TEXT,
+  result_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_id ON quiz_questions (quiz_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_id ON quiz_attempts (user_id);
 CREATE INDEX IF NOT EXISTS idx_xp_ledger_user_id ON xp_ledger (user_id);
 CREATE INDEX IF NOT EXISTS idx_mentorship_requests_student ON mentorship_requests (student_user_id);
+CREATE INDEX IF NOT EXISTS idx_quiz_share_logs_quiz_id ON quiz_share_logs (quiz_id);
