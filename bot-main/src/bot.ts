@@ -64,6 +64,22 @@ export async function notifyAdmins(message: string): Promise<void> {
   );
 }
 
+export async function notifyAdmins(message: string): Promise<void> {
+  if (config.adminTelegramIds.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    config.adminTelegramIds.map(async (adminId) => {
+      try {
+        await bot.api.sendMessage(adminId, message);
+      } catch (error) {
+        console.error(`Failed to notify admin ${adminId}:`, error);
+      }
+    })
+  );
+}
+
 registerStartHandlers(bot);
 registerQuizHandlers(bot);
 registerLeaderboardHandlers(bot);
