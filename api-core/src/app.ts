@@ -10,11 +10,12 @@ import { mentorshipRoutes } from './routes/mentorshipRoutes.js';
 import { premiumRoutes } from './routes/premiumRoutes.js';
 import { webAppRoutes } from './routes/webAppRoutes.js';
 import { pdfQuizRoutes } from './routes/pdfQuizRoutes.js';
+import { taskRoutes } from './routes/taskRoutes.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
   await app.register(cors, { origin: '*' });
-  
+
   app.register(multipart, {
     limits: {
       fileSize: 10 * 1024 * 1024,
@@ -36,6 +37,7 @@ export async function buildApp() {
   app.register(mentorshipRoutes, { prefix: '/mentorship' });
   app.register(premiumRoutes, { prefix: '/premium' });
   app.register(pdfQuizRoutes, { prefix: '/pdf-quiz' });
+  app.register(taskRoutes, { prefix: '/tasks' });
 
   app.setErrorHandler((error, request, reply) => {
     app.log.error({ err: error, url: request.url, method: request.method }, 'request failed');
@@ -61,7 +63,11 @@ export async function buildApp() {
       'no questions generated',
       'invalid quiz payload',
       'invalid router payload',
-      'invalid share log payload'
+      'invalid share log payload',
+      'task not found',
+      'tasktype must be link or file',
+      'linktext is required for link task',
+      'fileid is required for file task'
     ]);
 
     if (exact400Errors.has(errorMessage)) {
