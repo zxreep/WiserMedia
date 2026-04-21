@@ -65,6 +65,33 @@
         </form>
       </div>
 
+      <div class="section">
+        <h3>Admin Tasks Panel</h3>
+        <label>Task Type</label>
+        <select id="taskType">
+          <option value="link">Link</option>
+          <option value="file">File</option>
+        </select>
+
+        <label>Link Text / URL</label>
+        <textarea id="taskLinkText" rows="3" placeholder="Paste link text or URL..."></textarea>
+
+        <label>File ID (do not upload file)</label>
+        <input id="taskFileId" type="text" placeholder="Paste file id only..." />
+
+        <label>Task ID (for update/delete)</label>
+        <input id="taskId" type="text" placeholder="e.g. 2d4b7f77-..." />
+
+        <label>Task Status</label>
+        <input id="taskStatus" type="text" value="done" />
+
+        <div class="grid">
+          <button id="taskCreateBtn" type="button">Create Task</button>
+          <button id="taskDoneBtn" type="button">Mark Done</button>
+          <button id="taskDeleteBtn" type="button">Delete Task</button>
+        </div>
+      </div>
+
       <div id="status"></div>
       <div class="grid">
         <div>
@@ -88,6 +115,12 @@
       const jsonForm = document.getElementById('json-form');
       const submitBtn = document.getElementById('submitBtn');
       const jsonSubmitBtn = document.getElementById('jsonSubmitBtn');
+      const taskCreateBtn = document.getElementById('taskCreateBtn');
+      const taskDoneBtn = document.getElementById('taskDoneBtn');
+      const taskDeleteBtn = document.getElementById('taskDeleteBtn');
+      const taskTypeEl = document.getElementById('taskType');
+      const taskLinkTextEl = document.getElementById('taskLinkText');
+      const taskFileIdEl = document.getElementById('taskFileId');
 
       const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
       for (const key of ['botToken', 'chatId', 'aiApiKey', 'aiModel', 'outputMode']) {
@@ -204,6 +237,80 @@
           setStatus('error', err.message || 'Failed to add quiz');
         } finally {
           jsonSubmitBtn.disabled = false;
+        }
+      });
+
+      const syncTaskInputMode = () => {
+        const isLink = taskTypeEl.value === 'link';
+        taskLinkTextEl.disabled = !isLink;
+        taskFileIdEl.disabled = isLink;
+      };
+      taskTypeEl.addEventListener('change', syncTaskInputMode);
+      syncTaskInputMode();
+
+      taskCreateBtn.addEventListener('click', async () => {
+        const tasktype = taskTypeEl.value;
+        const linktext = taskLinkTextEl.value.trim();
+        const fileid = taskFileIdEl.value.trim();
+        if (tasktype === 'link' && !linktext) return setStatus('error', 'Link text is required.');
+        if (tasktype === 'file' && !fileid) return setStatus('error', 'File ID is required.');
+
+        taskCreateBtn.disabled = true;
+        try {
+          setStatus('loading', 'Creating task...');
+          const resp = await fetch('/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tasktype, linktext, fileid })
+          });
+          const data = await parseResponse(resp, 'tasks-create');
+          if (!resp.ok) throw new Error(data.error || 'Failed to create task');
+          document.getElementById('taskId').value = data?.data?.id ?? '';
+          setStatus('success', 'Task created.');
+          resultEl.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          setStatus('error', err.message || 'Failed to create task');
+        } finally {
+          taskCreateBtn.disabled = false;
+        }
+      });
+
+      taskDoneBtn.addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value.trim();
+        const status = document.getElementById('taskStatus').value.trim() || 'done';
+        if (!taskId) return setStatus('error', 'Task ID is required to update status.');
+
+        taskDoneBtn.disabled = true;
+        try {
+          setStatus('loading', 'Updating task status...');
+          const resp = await fetch(`/tasks?taskid=${encodeURIComponent(taskId)}&status=${encodeURIComponent(status)}`);
+          const data = await parseResponse(resp, 'tasks-update');
+          if (!resp.ok) throw new Error(data.error || 'Failed to update task');
+          setStatus('success', 'Task status updated.');
+          resultEl.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          setStatus('error', err.message || 'Failed to update task');
+        } finally {
+          taskDoneBtn.disabled = false;
+        }
+      });
+
+      taskDeleteBtn.addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value.trim();
+        if (!taskId) return setStatus('error', 'Task ID is required to delete.');
+
+        taskDeleteBtn.disabled = true;
+        try {
+          setStatus('loading', 'Deleting task...');
+          const resp = await fetch(`/tasks?taskid=${encodeURIComponent(taskId)}&action=delete`);
+          const data = await parseResponse(resp, 'tasks-delete');
+          if (!resp.ok) throw new Error(data.error || 'Failed to delete task');
+          setStatus('success', 'Task deleted.');
+          resultEl.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          setStatus('error', err.message || 'Failed to delete task');
+        } finally {
+          taskDeleteBtn.disabled = false;
         }
       });
     </script>
