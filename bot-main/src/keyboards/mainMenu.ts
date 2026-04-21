@@ -5,6 +5,7 @@ export function mainMenuKeyboard(role: string) {
 
   if (role.toLowerCase() === 'admin') {
     keyboard.row().text('🛠️ View All Quizzes', 'admin_view_quizzes');
+    keyboard.row().text('🧾 Task Panel', 'admin_task_panel');
   }
 
   return keyboard;

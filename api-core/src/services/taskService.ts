@@ -15,6 +15,37 @@ type CreateTaskInput =
   | { taskType: 'link'; linkText: string }
   | { taskType: 'file'; fileId: string };
 
+let ensureTablePromise: Promise<void> | null = null;
+
+async function ensureAdminTasksTable(): Promise<void> {
+  if (!ensureTablePromise) {
+    ensureTablePromise = (async () => {
+      await dbQuery(`
+        CREATE TABLE IF NOT EXISTS admin_tasks (
+          id TEXT PRIMARY KEY,
+          task_type TEXT NOT NULL CHECK (task_type IN ('link', 'file')),
+          link_text TEXT,
+          file_id TEXT,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          CHECK (
+            (task_type = 'link' AND link_text IS NOT NULL AND file_id IS NULL)
+            OR
+            (task_type = 'file' AND file_id IS NOT NULL AND link_text IS NULL)
+          )
+        )
+      `);
+
+      await dbQuery(
+        'CREATE INDEX IF NOT EXISTS idx_admin_tasks_created_at ON admin_tasks (created_at DESC)'
+      );
+    })();
+  }
+
+  await ensureTablePromise;
+}
+
 function mapTask(row: TaskRow) {
   return {
     id: row.id,
@@ -28,6 +59,7 @@ function mapTask(row: TaskRow) {
 }
 
 export async function createTask(input: CreateTaskInput) {
+  await ensureAdminTasksTable();
   const id = randomUUID();
 
   const linkText = input.taskType === 'link' ? input.linkText : null;
@@ -44,6 +76,7 @@ export async function createTask(input: CreateTaskInput) {
 }
 
 export async function getTasks() {
+  await ensureAdminTasksTable();
   const result = await dbQuery<TaskRow>(
     `SELECT id, task_type, link_text, file_id, status, created_at::text, updated_at::text
      FROM admin_tasks
@@ -54,6 +87,7 @@ export async function getTasks() {
 }
 
 export async function updateTaskStatus(taskId: string, status: string) {
+  await ensureAdminTasksTable();
   const result = await dbQuery<TaskRow>(
     `UPDATE admin_tasks
      SET status = $2, updated_at = NOW()
@@ -70,6 +104,7 @@ export async function updateTaskStatus(taskId: string, status: string) {
 }
 
 export async function deleteTask(taskId: string) {
+  await ensureAdminTasksTable();
   const result = await dbQuery<TaskRow>(
     `DELETE FROM admin_tasks
      WHERE id = $1
