@@ -112,8 +112,17 @@ CREATE TABLE IF NOT EXISTS quiz_share_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS admin_tasks (
+  id TEXT PRIMARY KEY,
+  task_text TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_id ON quiz_questions (quiz_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_id ON quiz_attempts (user_id);
 CREATE INDEX IF NOT EXISTS idx_xp_ledger_user_id ON xp_ledger (user_id);
 CREATE INDEX IF NOT EXISTS idx_mentorship_requests_student ON mentorship_requests (student_user_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_share_logs_quiz_id ON quiz_share_logs (quiz_id);
+CREATE INDEX IF NOT EXISTS idx_admin_tasks_created_at ON admin_tasks (created_at DESC);
