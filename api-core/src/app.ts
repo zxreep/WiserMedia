@@ -64,8 +64,10 @@ export async function buildApp() {
       'invalid quiz payload',
       'invalid router payload',
       'invalid share log payload',
-      'task is required',
-      'task not found'
+      'task not found',
+      'tasktype must be link or file',
+      'linktext is required for link task',
+      'fileid is required for file task'
     ]);
 
     if (exact400Errors.has(errorMessage)) {

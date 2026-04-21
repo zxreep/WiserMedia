@@ -1,20 +1,31 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createTask, deleteTask, getTasks, updateTaskStatus } from '../services/taskService.js';
-
-type TaskBody = { task?: string };
 type TaskQuery = { taskid?: string; status?: string; action?: string };
+type CreateTaskBody = { tasktype?: string; linktext?: string; fileid?: string };
 
 export async function createTaskController(
-  request: FastifyRequest<{ Body: TaskBody }>,
+  request: FastifyRequest<{ Body: CreateTaskBody }>,
   reply: FastifyReply
 ) {
-  const taskText = request.body.task?.trim();
+  const taskType = request.body.tasktype?.trim();
+  const linkText = request.body.linktext?.trim();
+  const fileId = request.body.fileid?.trim();
 
-  if (!taskText) {
-    return reply.code(400).send({ success: false, error: 'task is required' });
+  if (taskType !== 'link' && taskType !== 'file') {
+    return reply.code(400).send({ success: false, error: 'tasktype must be link or file' });
   }
 
-  const task = await createTask(taskText);
+  if (taskType === 'link' && !linkText) {
+    return reply.code(400).send({ success: false, error: 'linktext is required for link task' });
+  }
+
+  if (taskType === 'file' && !fileId) {
+    return reply.code(400).send({ success: false, error: 'fileid is required for file task' });
+  }
+
+  const task = await createTask(
+    taskType === 'link' ? { taskType, linkText: linkText! } : { taskType, fileId: fileId! }
+  );
   return reply.code(201).send({ success: true, data: task });
 }
 

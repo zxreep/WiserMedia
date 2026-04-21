@@ -114,10 +114,17 @@ CREATE TABLE IF NOT EXISTS quiz_share_logs (
 
 CREATE TABLE IF NOT EXISTS admin_tasks (
   id TEXT PRIMARY KEY,
-  task_text TEXT NOT NULL,
+  task_type TEXT NOT NULL CHECK (task_type IN ('link', 'file')),
+  link_text TEXT,
+  file_id TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (
+    (task_type = 'link' AND link_text IS NOT NULL AND file_id IS NULL)
+    OR
+    (task_type = 'file' AND file_id IS NOT NULL AND link_text IS NULL)
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_id ON quiz_questions (quiz_id);

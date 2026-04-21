@@ -67,8 +67,17 @@
 
       <div class="section">
         <h3>Admin Tasks Panel</h3>
-        <label>Task Text</label>
-        <textarea id="taskText" rows="3" placeholder="Paste any URL or instruction text..."></textarea>
+        <label>Task Type</label>
+        <select id="taskType">
+          <option value="link">Link</option>
+          <option value="file">File</option>
+        </select>
+
+        <label>Link Text / URL</label>
+        <textarea id="taskLinkText" rows="3" placeholder="Paste link text or URL..."></textarea>
+
+        <label>File ID (do not upload file)</label>
+        <input id="taskFileId" type="text" placeholder="Paste file id only..." />
 
         <label>Task ID (for update/delete)</label>
         <input id="taskId" type="text" placeholder="e.g. 2d4b7f77-..." />
@@ -109,6 +118,9 @@
       const taskCreateBtn = document.getElementById('taskCreateBtn');
       const taskDoneBtn = document.getElementById('taskDoneBtn');
       const taskDeleteBtn = document.getElementById('taskDeleteBtn');
+      const taskTypeEl = document.getElementById('taskType');
+      const taskLinkTextEl = document.getElementById('taskLinkText');
+      const taskFileIdEl = document.getElementById('taskFileId');
 
       const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
       for (const key of ['botToken', 'chatId', 'aiApiKey', 'aiModel', 'outputMode']) {
@@ -228,9 +240,20 @@
         }
       });
 
+      const syncTaskInputMode = () => {
+        const isLink = taskTypeEl.value === 'link';
+        taskLinkTextEl.disabled = !isLink;
+        taskFileIdEl.disabled = isLink;
+      };
+      taskTypeEl.addEventListener('change', syncTaskInputMode);
+      syncTaskInputMode();
+
       taskCreateBtn.addEventListener('click', async () => {
-        const task = document.getElementById('taskText').value.trim();
-        if (!task) return setStatus('error', 'Task text is required.');
+        const tasktype = taskTypeEl.value;
+        const linktext = taskLinkTextEl.value.trim();
+        const fileid = taskFileIdEl.value.trim();
+        if (tasktype === 'link' && !linktext) return setStatus('error', 'Link text is required.');
+        if (tasktype === 'file' && !fileid) return setStatus('error', 'File ID is required.');
 
         taskCreateBtn.disabled = true;
         try {
@@ -238,7 +261,7 @@
           const resp = await fetch('/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ task })
+            body: JSON.stringify({ tasktype, linktext, fileid })
           });
           const data = await parseResponse(resp, 'tasks-create');
           if (!resp.ok) throw new Error(data.error || 'Failed to create task');
