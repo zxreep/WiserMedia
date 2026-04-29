@@ -1,5 +1,5 @@
 import type { Bot, Context } from 'grammy';
-import { authUser, getLeaderboard, getQuizzes, startQuiz } from '../api-client.js';
+import { authUser, getAdminTasks, getLeaderboard, getQuizzes, startQuiz } from '../api-client.js';
 import { getSession, notifyAdmins, setSession } from '../bot.js';
 import { config } from '../config.js';
 import { mainMenuKeyboard } from '../keyboards/mainMenu.js';
@@ -118,5 +118,42 @@ export function registerStartHandlers(bot: Bot) {
   bot.callbackQuery('premium_locked', async (ctx) => {
     await ctx.answerCallbackQuery();
     await ctx.reply('🔒 Premium feature\n\nUpgrade to unlock full access 🚀');
+  });
+
+  bot.callbackQuery('admin_task_panel', async (ctx) => {
+    try {
+      await ctx.answerCallbackQuery();
+      const from = ctx.from;
+      if (!from) return;
+
+      const profile = await authUser({
+        telegram_id: String(from.id),
+        username: from.username,
+        first_name: from.first_name
+      });
+
+      if (profile.role.toLowerCase() !== 'admin') {
+        await ctx.reply('⛔ Only admins can access task controls.');
+        return;
+      }
+
+      const tasks = await getAdminTasks();
+      const openCount = tasks.filter((task) => task.status !== 'done').length;
+      const panelUrl = `${config.apiBaseUrl}/pdf-quiz-generator.html`;
+      await ctx.reply(
+        [
+          '🧾 Admin Task Panel',
+          `Open tasks: ${openCount}`,
+          '',
+          `Open panel: ${panelUrl}`,
+          '',
+          'Use the Admin Tasks Panel buttons to create link/file tasks, mark done, or delete.'
+        ].join('\n')
+      );
+    } catch (error) {
+      console.error('admin_task_panel error:', error);
+      await notifyAdmins(`🚨 admin_task_panel failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
+      await ctx.reply('⚠️ Failed to open admin task panel.');
+    }
   });
 }

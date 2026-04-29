@@ -317,3 +317,34 @@ export async function logQuizShare(input: {
 
   return { logged: true };
 }
+
+export async function getQuizPollQuestions(quizId: number, userId: number) {
+  const adminCheck = await dbQuery<{ role: string }>('SELECT role FROM users WHERE id = $1', [userId]);
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].role.toLowerCase() !== 'admin') {
+    throw new Error('admin access required');
+  }
+
+  const questions = await dbQuery<{
+    id: number;
+    question_text: string;
+    options: string;
+    correct_option_index: number;
+  }>(
+    `SELECT id, question_text, options::text, correct_option_index
+     FROM quiz_questions
+     WHERE quiz_id = $1
+     ORDER BY question_order ASC`,
+    [quizId]
+  );
+
+  if (questions.rows.length === 0) {
+    throw new Error('quiz not found');
+  }
+
+  return questions.rows.map((q) => ({
+    id: q.id,
+    question: q.question_text,
+    options: JSON.parse(q.options) as string[],
+    correct_option_index: q.correct_option_index
+  }));
+}
