@@ -1,6 +1,6 @@
 import type { Bot, Context } from 'grammy';
 import { authUser, getQuizPollQuestions } from '../api-client.js';
-import { notifyAdmins } from '../bot.js';
+import { getBotUsername, notifyAdmins } from '../bot.js';
 
 type ParsedCommand = {
   quizId: number;
@@ -10,7 +10,10 @@ type ParsedCommand = {
 };
 
 function parsePollCommand(text: string): ParsedCommand | null {
-  const match = /^\/send_polls(\d+)\s+(\d+)\s+(.+)$/i.exec(text.trim());
+  const username = getBotUsername().toLowerCase();
+  const normalized = text.trim();
+  const withoutPrefix = normalized.replace(new RegExp(`^@${username}\\s+`, 'i'), '');
+  const match = /^\/send_polls(\d+)(?:@[a-zA-Z0-9_]+)?\s+(\d+)\s+(.+)$/i.exec(withoutPrefix);
   if (!match) return null;
 
   const quizId = Number(match[1]);
@@ -44,14 +47,14 @@ export function registerPollCommandHandlers(bot: Bot) {
   bot.on(['message:text', 'channel_post:text'], async (ctx: Context) => {
     try {
       const messageText = 'message' in ctx.update ? ctx.update.message?.text : ctx.update.channel_post?.text;
-      if (!messageText || !messageText.startsWith('/send_polls')) {
+      if (!messageText || (!messageText.startsWith('/send_polls') && !messageText.startsWith('@'))) {
         return;
       }
 
       const parsed = parsePollCommand(messageText);
       if (!parsed) {
         await ctx.reply(
-          '⚠️ Invalid command format. Use:\n/send_polls{QUIZ_ID} {NO_OF_QUESTIONS} {regular|timed [seconds]}\nExample: /send_polls12 10 regular\nExample: /send_polls12 10 timed 60'
+          '⚠️ Invalid command format. Use:\n@botname /send_polls{QUIZ_ID} {NO_OF_QUESTIONS} {regular|timed [seconds]}\nExample: @botname /send_polls22 10 timed\nExample: /send_polls22 10 timed 90'
         );
         return;
       }
@@ -80,38 +83,57 @@ export function registerPollCommandHandlers(bot: Bot) {
       }
 
       const questions = await getQuizPollQuestions(parsed.quizId, profile.user_id);
-      const selected = questions.slice(0, parsed.questionCount);
-
-      if (selected.length === 0) {
+      if (questions.length === 0) {
         await ctx.reply('⚠️ No questions available for this quiz.');
         return;
       }
 
       await ctx.reply(
-        `🚀 Sending ${selected.length} polls from quiz ${parsed.quizId} (${parsed.method}${
+        `🚀 Sending ${parsed.questionCount} polls from quiz ${parsed.quizId} (${parsed.method}${
           parsed.method === 'timed' ? `, ${parsed.timerSeconds}s` : ''
         })...`
       );
 
       let sent = 0;
-      for (let i = 0; i < selected.length; i += 1) {
-        const question = selected[i];
-        await ctx.api.sendPoll(chatId, question.question, question.options, {
-          type: 'quiz',
-          correct_option_ids: [question.correct_option_index],
-          open_period: parsed.method === 'timed' ? parsed.timerSeconds : undefined,
-          is_anonymous: false,
-          explanation: `Question ${i + 1} of ${selected.length}`
-        });
+      let failed = 0;
+      let attempts = 0;
+      let cursor = 0;
+      const maxAttempts = Math.max(parsed.questionCount * 5, questions.length);
 
-        sent += 1;
+      while (sent < parsed.questionCount && attempts < maxAttempts) {
+        const question = questions[cursor % questions.length];
+        cursor += 1;
+        attempts += 1;
 
-        if (parsed.method === 'regular' && sent % 5 === 0) {
-          await sleep(1000);
+        try {
+          await ctx.api.sendPoll(chatId, question.question, question.options, {
+            type: 'quiz',
+            correct_option_ids: [question.correct_option_index],
+            open_period: parsed.method === 'timed' ? parsed.timerSeconds : undefined,
+            is_anonymous: false,
+            explanation: `Question ${sent + 1} of ${parsed.questionCount}`
+          });
+
+          sent += 1;
+
+          if (parsed.method === 'regular' && sent % 5 === 0) {
+            await sleep(1000);
+          }
+
+          if (parsed.method === 'timed' && sent < parsed.questionCount) {
+            await sleep(parsed.timerSeconds * 1000);
+          }
+        } catch (error) {
+          failed += 1;
+          console.error('send poll failed, moving to next question:', error);
         }
       }
 
-      await ctx.reply(`✅ Finished sending ${sent} polls.\n📊 Score card: each correct poll answer = 1 point.`);
+      if (sent < parsed.questionCount) {
+        await ctx.reply(`⚠️ Sent ${sent}/${parsed.questionCount} polls. Failed attempts: ${failed}.`);
+      } else {
+        await ctx.reply(`✅ Finished sending ${sent} polls.\n📊 Score card: each correct poll answer = 1 point.`);
+      }
     } catch (error) {
       console.error('send_polls command error:', error);
       await notifyAdmins(`🚨 send_polls failed\nUser: ${ctx.from?.id ?? 'unknown'}\nError: ${String(error)}`);
