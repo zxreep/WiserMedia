@@ -55,6 +55,23 @@ export type LeaderboardData = {
   users: Array<{ name: string; xp: number }>;
 };
 
+export type AdminTask = {
+  id: string;
+  tasktype: 'link' | 'file';
+  linktext: string | null;
+  fileid: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PollQuestion = {
+  id: number;
+  question: string;
+  options: string[];
+  correct_option_index: number;
+};
+
 const api = axios.create({
   baseURL: config.apiBaseUrl,
   timeout: 10000
@@ -120,4 +137,16 @@ export async function logQuizShare(input: {
 }) {
   const response = await api.post<ApiEnvelope<{ logged: boolean }>>('/quizzes/shares', input);
   return unwrap(response.data);
+}
+
+export async function getAdminTasks(): Promise<AdminTask[]> {
+  const response = await api.get<ApiEnvelope<AdminTask[]>>('/tasks');
+  return unwrap(response.data);
+}
+
+export async function getQuizPollQuestions(quizId: number, userId: number): Promise<PollQuestion[]> {
+  const response = await api.get<ApiEnvelope<{ questions: PollQuestion[] }>>(
+    `/quizzes/${quizId}/poll-questions?user_id=${encodeURIComponent(String(userId))}`
+  );
+  return unwrap(response.data).questions;
 }

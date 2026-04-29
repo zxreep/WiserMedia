@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { getWebAppQuiz, listPublishedQuizzes, logQuizShare, startQuiz, submitQuiz, submitWebAppQuiz } from '../services/quizService.js';
+import { getQuizPollQuestions, getWebAppQuiz, listPublishedQuizzes, logQuizShare, startQuiz, submitQuiz, submitWebAppQuiz } from '../services/quizService.js';
 
 type StartBody = { user_id?: number };
 type SubmitBody = {
@@ -96,4 +96,19 @@ export async function logQuizShareController(
   });
 
   return reply.send({ success: true, data });
+}
+
+export async function quizPollQuestionsController(
+  request: FastifyRequest<{ Params: { id: string }; Querystring: { user_id?: string } }>,
+  reply: FastifyReply
+) {
+  const quizId = Number(request.params.id);
+  const userId = Number(request.query.user_id);
+
+  if (!Number.isInteger(quizId) || !Number.isInteger(userId) || userId <= 0) {
+    return reply.code(400).send({ success: false, error: 'invalid quiz or user_id missing' });
+  }
+
+  const questions = await getQuizPollQuestions(quizId, userId);
+  return reply.send({ success: true, data: { questions } });
 }
