@@ -67,7 +67,8 @@ export async function buildApp() {
       'task not found',
       'tasktype must be link or file',
       'linktext is required for link task',
-      'fileid is required for file task'
+      'fileid is required for file task',
+      'admin access required'
     ]);
 
     if (exact400Errors.has(errorMessage)) {

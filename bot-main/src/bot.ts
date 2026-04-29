@@ -8,6 +8,7 @@ import { registerStartHandlers } from './handlers/start.js';
 import { registerQuizHandlers } from './handlers/quiz.js';
 import { registerLeaderboardHandlers } from './handlers/leaderboard.js';
 import { registerMentorshipHandlers } from './handlers/mentorship.js';
+import { registerPollCommandHandlers } from './handlers/pollCommands.js';
 
 export type LocalQuizState = {
   quiz_id: number;
@@ -70,6 +71,7 @@ registerStartHandlers(bot);
 registerQuizHandlers(bot);
 registerLeaderboardHandlers(bot);
 registerMentorshipHandlers(bot);
+registerPollCommandHandlers(bot);
 
 bot.catch(async (error) => {
   console.error('Bot error:', error.error);

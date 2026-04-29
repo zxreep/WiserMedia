@@ -65,6 +65,13 @@ export type AdminTask = {
   updated_at: string;
 };
 
+export type PollQuestion = {
+  id: number;
+  question: string;
+  options: string[];
+  correct_option_index: number;
+};
+
 const api = axios.create({
   baseURL: config.apiBaseUrl,
   timeout: 10000
@@ -135,4 +142,11 @@ export async function logQuizShare(input: {
 export async function getAdminTasks(): Promise<AdminTask[]> {
   const response = await api.get<ApiEnvelope<AdminTask[]>>('/tasks');
   return unwrap(response.data);
+}
+
+export async function getQuizPollQuestions(quizId: number, userId: number): Promise<PollQuestion[]> {
+  const response = await api.get<ApiEnvelope<{ questions: PollQuestion[] }>>(
+    `/quizzes/${quizId}/poll-questions?user_id=${encodeURIComponent(String(userId))}`
+  );
+  return unwrap(response.data).questions;
 }
